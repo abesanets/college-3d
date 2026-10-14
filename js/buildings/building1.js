@@ -731,10 +731,10 @@
             // Центральная стена между ЛК№1 и ЛК№2 (Z = 0.0)
             addWallLine(targetGroup, 8.6, 0.0, 16.0, 0.0, [], INNER_T);
 
-            // Стена ЛК№2 со стороны выхода на улицу (Z = 3.8)
+            // Стена ЛК№2 со стороны выхода на улицу (Z = 3.8) — внешняя стена, не скрывается в срезе
             addWallLine(targetGroup, 8.6, 3.8, 16.0, 3.8, [
                 { from: 8.8, to: 10.2, type: 'door', isExterior: true } // дверь на наружную площадку крыльца к лестнице
-            ], INNER_T);
+            ], OUTER_T);
 
             buildStaircaseUnit(targetGroup, -3.8, 0.0, -1.9, true);
             buildStaircaseUnit(targetGroup, 0.0, 3.8, 1.9, false);

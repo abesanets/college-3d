@@ -390,7 +390,16 @@ function isPointInFloorFootprint(lx, lz, floorNum, bldId = null) {
     }
 
     if (showB4 && (!bldId || bldId === 4) && floorNum <= 3) {
-        if (lx >= B4_X_WEST - m && lx <= B4_X_EAST + m && lz >= B4_Z_NORTH - m && lz <= B4_Z_SOUTH + m) return true;
+        if (floorNum === 3) {
+            // На 3-м этаже Корпуса 4 зоны Второго Света (над спортзалом и актовым залом) являются сквозными проемами (нет перекрытия)
+            const inGymVoid = (lx >= B4_X_WEST - m && lx <= B4_X_EAST + m && lz >= B4_Z_NORTH - m && lz <= B4_Z_MID_N + m);
+            const inHallVoid = (lx >= 48.2 - m && lx <= B4_X_EAST + m && lz >= -43.6 - m && lz <= B4_Z_SOUTH + m);
+            if (!inGymVoid && !inHallVoid) {
+                if (lx >= B4_X_WEST - m && lx <= B4_X_EAST + m && lz >= B4_Z_NORTH - m && lz <= B4_Z_SOUTH + m) return true;
+            }
+        } else {
+            if (lx >= B4_X_WEST - m && lx <= B4_X_EAST + m && lz >= B4_Z_NORTH - m && lz <= B4_Z_SOUTH + m) return true;
+        }
         if (lx >= B4_LK2_X1 - m && lx <= B4_LK2_X2 + m && lz >= B4_LK2_Z1 - m && lz <= B4_LK2_Z2 + m) return true;
         if (lx >= B4_LK3_X1 - m && lx <= B4_LK3_X2 + m && lz >= B4_LK3_Z1 - m && lz <= B4_LK3_Z2 + m) return true;
         if (lx >= B4_LK1_X1 - m && lx <= B4_LK1_X2 + m && lz >= B4_LK1_Z1 - m && lz <= B4_LK1_Z2 + m) return true;
@@ -543,8 +552,8 @@ function updateFloorsInteriorVisibility() {
                 return;
             }
 
-            // ВНЕШНИЕ ЭЛЕМЕНТЫ (фасадные стены, наружные двери, уличные лестницы/крыльца и плиты) ВСЕГДА ВИДНЫ!
-            if (child.userData.isExterior === true) {
+            // ВНЕШНИЕ ЭЛЕМЕНТЫ, ДВУСВЕТНЫЕ ПРОСТРАНСТВА И СТУПЕНИ ЛЕСТНИЦ ВСЕГДА ВИДНЫ!
+            if (child.userData.isExterior === true || child.userData.isDoubleHeight === true || child.userData.isStair === true) {
                 if (child.userData.isDoor) {
                     child.visible = STATE.showDoors;
                 } else {
@@ -657,9 +666,13 @@ function updateWallHeights() {
     });
 
     stairMeshes.forEach(st => {
-        const stepH = Math.max(0.06, STATE.wallHeight * st.heightRatio);
-        st.mesh.scale.y = stepH;
-        st.mesh.position.y = (stepH / 2) + st.yOffset;
+        if (!st) return;
+        const mesh = st.mesh || st;
+        const heightRatio = st.heightRatio !== undefined ? st.heightRatio : 0.22;
+        const yOffset = st.yOffset !== undefined ? st.yOffset : 0;
+        const stepH = Math.max(0.06, STATE.wallHeight * heightRatio);
+        mesh.scale.y = stepH;
+        mesh.position.y = (stepH / 2) + yOffset;
     });
 
     roofMeshes.forEach(r => {

@@ -33,7 +33,10 @@ const MATERIALS = {
     stair: new THREE.MeshStandardMaterial({
         color: 0xbac2cc,
         roughness: 0.7,
-        metalness: 0.08
+        metalness: 0.08,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1
     }),
     elevatorCar: new THREE.MeshStandardMaterial({
         color: 0xb0b8c4,
