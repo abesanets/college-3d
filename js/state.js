@@ -20,6 +20,7 @@ const doorMeshes = [];
 const doorEdges = [];
 const slabMeshes = [];
 const stairMeshes = [];
+const roofMeshes = [];
 const labelSprites = [];
 const guideLines = [];
 
@@ -75,7 +76,8 @@ const STATE = {
     showDoors: true,
     showLabels: true,
     smartLabelOcclusion: true,
-    showStairAxes: true,
+    showRoof: false,
+    showStairAxes: false,
     showGuides: true,
     showEdges: true,
     targetPos: {

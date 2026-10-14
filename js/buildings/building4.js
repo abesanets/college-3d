@@ -60,7 +60,7 @@
                     const sz = z2 + (i + 0.5) * sDepth;
                     const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
                     const geom = new THREE.BoxGeometry(w, 1, sDepth * 0.94);
-                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14, true);
                 }
             } else if (stepDir === 'east') {
                 const d = Math.abs(z2 - z1);
@@ -70,7 +70,7 @@
                     const sx = x2 + (i + 0.5) * sWidth;
                     const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
                     const geom = new THREE.BoxGeometry(sWidth * 0.94, 1, d);
-                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14, true);
                 }
             } else if (stepDir === 'west') {
                 const d = Math.abs(z2 - z1);
@@ -80,7 +80,7 @@
                     const sx = x1 - (i + 0.5) * sWidth;
                     const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
                     const geom = new THREE.BoxGeometry(sWidth * 0.94, 1, d);
-                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14, true);
                 }
             } else if (stepDir === 'north') {
                 const w = Math.abs(x2 - x1);
@@ -90,7 +90,7 @@
                     const sz = z1 - (i + 0.5) * sDepth;
                     const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
                     const geom = new THREE.BoxGeometry(w, 1, sDepth * 0.94);
-                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14, true);
                 }
             }
         }
@@ -142,10 +142,10 @@
 
             // --- 2. ОПОРНЫЕ СТОЛБЫ (КОЛОННЫ) ПОД НАВИСАЮЩЕЙ ЧАСТЬЮ СПОРТЗАЛА 206 (С ВОСТОКА И СЕВЕРА) ---
             [34.7, 38.2, 42.7, 47.2, 50.7].forEach(cx => {
-                addSquareColumn(targetGroup, cx, -61.2, 0.42);
+                addSquareColumn(targetGroup, cx, -61.2, 0.42, true);
             });
             [-61.2, -57.5, -53.8, -50.2].forEach(cz => {
-                addSquareColumn(targetGroup, 65.6, cz, 0.42);
+                addSquareColumn(targetGroup, 65.6, cz, 0.42, true);
             });
 
             // --- 3. СТЕНЫ ЛЕСТНИЧНЫХ КЛЕТОК И ВНЕШНЕГО ПЕРИМЕТРА 1-ГО ЭТАЖА ---

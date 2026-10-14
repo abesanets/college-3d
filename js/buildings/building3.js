@@ -50,7 +50,7 @@
                     const sx = xLandingWest - (i + 0.5) * sDepth;
                     const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
                     const geom = new THREE.BoxGeometry(sDepth * 0.94, 1, dz);
-                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14, true);
                 }
             } else if (stepsDir === 'south') {
                 // Площадка у выхода из ЛК №1 и ступени с южной стороны
@@ -62,7 +62,7 @@
                     const sz = zSouth + (i + 0.5) * sDepth;
                     const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
                     const geom = new THREE.BoxGeometry(porchW, 1, sDepth * 0.94);
-                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14, true);
                 }
             }
         }

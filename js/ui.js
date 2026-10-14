@@ -197,6 +197,11 @@ function setupUI() {
         updateLabelsVisibility();
     });
 
+    document.getElementById('toggle-roof')?.addEventListener('change', e => {
+        STATE.showRoof = e.target.checked;
+        updateRoofsVisibility();
+    });
+
     document.getElementById('toggle-stair-axes')?.addEventListener('change', e => {
         STATE.showStairAxes = e.target.checked;
         updateStairValidationAxes();

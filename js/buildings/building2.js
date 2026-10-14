@@ -46,7 +46,7 @@
                 const sz = zNorth + (i + 0.5) * sDepth;
                 const heightRatio = 0.03 + ((i + 1) / steps) * 0.12;
                 const geom = new THREE.BoxGeometry(w, 1, sDepth * 0.95);
-                registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14, true);
             }
         }
 
@@ -57,7 +57,7 @@
             addFloorRect(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_BOT, false);
 
             buildB2ExteriorPorch(targetGroup, B2_LK3_X1, 22.8, -17.0, true);
-            buildB2ExteriorPorch(targetGroup, B2_LK2_X1, B2_LK2_X2, -15.4, false);
+            buildB2ExteriorPorch(targetGroup, B2_LK2_X1, B2_LK2_X2, -15.4, true);
 
             addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_START, B2_Z_BOT, [
                 { from: -6.5, to: -5.1, type: 'door' }

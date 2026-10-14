@@ -17,11 +17,15 @@ function addFloorRect(targetGroup, x1, z1, x2, z2, isCore = false) {
     mesh.receiveShadow = true;
     mesh.userData.isFloorSlab = true;
     mesh.userData.isInterior = false;
+    mesh.userData.isExterior = true;
     targetGroup.add(mesh);
     slabMeshes.push(mesh);
 
     const edges = new THREE.EdgesGeometry(geom);
     const line = new THREE.LineSegments(edges, MATERIALS.edgeMain);
+    line.userData.isFloorSlab = true;
+    line.userData.isInterior = false;
+    line.userData.isExterior = true;
     mesh.add(line);
 }
 
@@ -32,6 +36,8 @@ function addWallLine(targetGroup, x1, z1, x2, z2, openings = [], wallThickness =
     const fixedCoord = isHorizontal ? z1 : x1;
     const angle = isHorizontal ? 0 : Math.PI / 2;
 
+    const isOuterWall = wallThickness >= 0.20;
+
     const sorted = [...openings].sort((a, b) => a.from - b.from);
     let cursor = startCoord;
 
@@ -40,22 +46,23 @@ function addWallLine(targetGroup, x1, z1, x2, z2, openings = [], wallThickness =
         const oEnd = Math.min(endCoord, op.to);
 
         if (oStart > cursor + 0.02) {
-            createWallSegment(targetGroup, cursor, oStart, fixedCoord, isHorizontal, angle, wallThickness, false);
+            createWallSegment(targetGroup, cursor, oStart, fixedCoord, isHorizontal, angle, wallThickness, false, isOuterWall);
         }
 
         if (op.type !== 'open') {
-            createWallSegment(targetGroup, oStart, oEnd, fixedCoord, isHorizontal, angle, 0.09, true);
+            const isExteriorDoor = op.isExterior !== undefined ? op.isExterior : isOuterWall;
+            createWallSegment(targetGroup, oStart, oEnd, fixedCoord, isHorizontal, angle, 0.09, true, isExteriorDoor);
         }
 
         cursor = oEnd;
     }
 
     if (cursor < endCoord - 0.02) {
-        createWallSegment(targetGroup, cursor, endCoord, fixedCoord, isHorizontal, angle, wallThickness, false);
+        createWallSegment(targetGroup, cursor, endCoord, fixedCoord, isHorizontal, angle, wallThickness, false, isOuterWall);
     }
 }
 
-function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, isDoor = false) {
+function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, isDoor = false, isExterior = false) {
     const dx = x2 - x1;
     const dz = z2 - z1;
     const len = Math.hypot(dx, dz);
@@ -75,12 +82,17 @@ function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, 
     mesh.rotation.y = -angle;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.isInterior = isDoor || (thickness < 0.20);
+    const effectiveExterior = isExterior || (thickness >= 0.20);
+    mesh.userData.isExterior = effectiveExterior;
+    mesh.userData.isInterior = !effectiveExterior && (isDoor || (thickness < 0.20));
     mesh.userData.isDoor = isDoor;
     targetGroup.add(mesh);
 
     const edgeGeom = new THREE.EdgesGeometry(geom);
     const edgeLine = new THREE.LineSegments(edgeGeom, isDoor ? MATERIALS.edgeDoor : MATERIALS.edgeMain);
+    edgeLine.userData.isExterior = effectiveExterior;
+    edgeLine.userData.isInterior = mesh.userData.isInterior;
+    edgeLine.userData.isDoor = isDoor;
     mesh.add(edgeLine);
 
     if (isDoor) {
@@ -92,7 +104,7 @@ function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, 
     }
 }
 
-function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle, thickness, isDoor) {
+function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle, thickness, isDoor, isExterior = false) {
     const len = Math.abs(c2 - c1);
     if (len <= 0.01) return;
 
@@ -110,12 +122,16 @@ function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle,
     mesh.rotation.y = -angle;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.isInterior = isDoor || (thickness < 0.20);
+    mesh.userData.isExterior = isExterior;
+    mesh.userData.isInterior = !isExterior && (isDoor || (thickness < 0.20));
     mesh.userData.isDoor = isDoor;
     targetGroup.add(mesh);
 
     const edgeGeom = new THREE.EdgesGeometry(geom);
     const edgeLine = new THREE.LineSegments(edgeGeom, isDoor ? MATERIALS.edgeDoor : MATERIALS.edgeMain);
+    edgeLine.userData.isExterior = isExterior;
+    edgeLine.userData.isInterior = mesh.userData.isInterior;
+    edgeLine.userData.isDoor = isDoor;
     mesh.add(edgeLine);
 
     if (isDoor) {
@@ -127,7 +143,7 @@ function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle,
     }
 }
 
-function addSquareColumn(targetGroup, cx, cz, size = 0.28) {
+function addSquareColumn(targetGroup, cx, cz, size = 0.28, isExterior = false) {
     const geom = new THREE.BoxGeometry(size, 1, size);
     const mesh = new THREE.Mesh(geom, MATERIALS.wall);
     const h = STATE.wallHeight;
@@ -135,11 +151,16 @@ function addSquareColumn(targetGroup, cx, cz, size = 0.28) {
     mesh.position.set(cx, h / 2, cz);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.isInterior = true;
+    mesh.userData.isExterior = isExterior;
+    mesh.userData.isInterior = !isExterior;
+    mesh.userData.isColumn = true;
     targetGroup.add(mesh);
 
     const edgeGeom = new THREE.EdgesGeometry(geom);
     const edgeLine = new THREE.LineSegments(edgeGeom, MATERIALS.edgeMain);
+    edgeLine.userData.isExterior = isExterior;
+    edgeLine.userData.isInterior = !isExterior;
+    edgeLine.userData.isColumn = true;
     mesh.add(edgeLine);
 
     wallMeshes.push(mesh);
@@ -267,17 +288,25 @@ function buildElevatorShaftCross(targetGroup, x1, z1, x2, z2) {
     targetGroup.add(crossLine);
 }
 
-function registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, yOffset = 0) {
+function registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, yOffset = 0, isExterior = false) {
     const mesh = new THREE.Mesh(geom, MATERIALS.stair);
     const stepH = Math.max(0.06, STATE.wallHeight * heightRatio);
     mesh.scale.y = stepH;
     mesh.position.set(sx, (stepH / 2) + yOffset, cz);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.userData.isInterior = true;
+
+    const effectiveIsExterior = isExterior || (yOffset < -0.05);
+    mesh.userData.isInterior = !effectiveIsExterior;
+    mesh.userData.isExterior = effectiveIsExterior;
+    mesh.userData.isStair = true;
 
     const edges = new THREE.EdgesGeometry(geom);
-    mesh.add(new THREE.LineSegments(edges, MATERIALS.edgeMain));
+    const edgeLine = new THREE.LineSegments(edges, MATERIALS.edgeMain);
+    edgeLine.userData.isInterior = !effectiveIsExterior;
+    edgeLine.userData.isExterior = effectiveIsExterior;
+    edgeLine.userData.isStair = true;
+    mesh.add(edgeLine);
     targetGroup.add(mesh);
 
     stairMeshes.push({ mesh, heightRatio, yOffset });
@@ -328,4 +357,32 @@ function buildCorridorStepsRight(targetGroup) {
         const geom = new THREE.BoxGeometry(stepW * 0.95, 1, depthZ);
         registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, 0);
     }
+}
+
+function addRoofRect(targetGroup, x1, z1, x2, z2, buildingNum = 1) {
+    const w = Math.abs(x2 - x1);
+    const d = Math.abs(z2 - z1);
+    const cx = (x1 + x2) / 2;
+    const cz = (z1 + z2) / 2;
+    const thickness = 0.16;
+
+    const geom = new THREE.BoxGeometry(w, thickness, d);
+    const mesh = new THREE.Mesh(geom, MATERIALS.roof);
+    mesh.position.set(cx, STATE.wallHeight + thickness / 2, cz);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.userData.isRoof = true;
+    mesh.userData.isExterior = true;
+    mesh.userData.isInterior = false;
+    mesh.visible = STATE.showRoof;
+
+    const edges = new THREE.EdgesGeometry(geom);
+    const line = new THREE.LineSegments(edges, MATERIALS.edgeRoof);
+    line.userData.isRoof = true;
+    line.userData.isExterior = true;
+    line.userData.isInterior = false;
+    mesh.add(line);
+
+    targetGroup.add(mesh);
+    roofMeshes.push({ mesh, thickness, building: buildingNum });
 }

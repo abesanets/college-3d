@@ -91,6 +91,7 @@ function init() {
     buildBuilding4Floor2(bldg4FloorGroups[2]);
     buildBuilding4Floor3(bldg4FloorGroups[3]);
 
+    buildRoofs();
     buildAlignmentGuides();
     buildStairValidationAxes();
 
@@ -99,6 +100,7 @@ function init() {
         floorGroups[f].position.copy(STATE.targetPos[f]);
     }
 
+    updateRoofsVisibility();
     updateLabelsVisibility();
     updateAlignmentGuides();
     updateStairValidationAxes();
@@ -167,6 +169,37 @@ function updateStairValidationAxes() {
 
         item.wireframeBox.scale.y = totalH;
         item.wireframeBox.position.set(item.cx, botY + totalH / 2, item.cz);
+    });
+}
+
+function buildRoofs() {
+    // Корпус 1: Кровля 7-го этажа + открытый переход каб. 305 на 3-м этаже
+    addRoofRect(bldg1FloorGroups[7], -10.0, -14.0, 16.0, -4.0, 1);
+    addRoofRect(bldg1FloorGroups[7], -14.0, -4.0, -5.8, 14.0, 1);
+    addRoofRect(bldg1FloorGroups[7], -5.8, -4.0, 16.0, 4.0, 1);
+    addRoofRect(bldg1FloorGroups[7], -5.8, 4.0, 12.5, 14.0, 1);
+    addRoofRect(bldg1FloorGroups[3], 16.0, -9.5, 20.4, -2.2, 1);
+
+    // Корпус 2: Кровля 3-го этажа
+    addRoofRect(bldg2FloorGroups[3], B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_BOT, 2);
+
+    // Корпус 3: Кровля 2-го этажа + переход к Корпусу 4
+    addRoofRect(bldg3FloorGroups[2], B3_X_WEST, B3_Z_NORTH, B3_X_EAST, B3_Z_SOUTH, 3);
+    addRoofRect(bldg3FloorGroups[2], B3_X_EAST, -47.6, 15.6, -44.0, 3);
+
+    // Корпус 4: Кровля 3-го этажа + сквозные лестничные шахты + переходы 2-го этажа
+    addRoofRect(bldg4FloorGroups[3], B4_X_WEST, B4_Z_NORTH, B4_X_EAST, B4_Z_SOUTH, 4);
+    addRoofRect(bldg4FloorGroups[3], B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z2, 4);
+    addRoofRect(bldg4FloorGroups[3], B4_LK3_X1, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, 4);
+    addRoofRect(bldg4FloorGroups[3], B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, 4);
+    // Переходы 2-го этажа
+    addRoofRect(bldg4FloorGroups[2], 15.6, -46.8, B4_X_WEST, -44.2, 4);
+    addRoofRect(bldg4FloorGroups[2], 36.2, B4_Z_SOUTH, B4_LK1_X1, B2_Z_TOP, 4);
+}
+
+function updateRoofsVisibility() {
+    roofMeshes.forEach(item => {
+        item.mesh.visible = STATE.showRoof;
     });
 }
 
@@ -386,7 +419,23 @@ function updateFloorsInteriorVisibility() {
         group.traverse(child => {
             if (!child.userData) return;
 
-            // Скрываем/показываем ТОЛЬКО внутренние перегородки, двери, ступени и таблички кабинетов
+            // КРЫША: управляется исключительно переключателем STATE.showRoof
+            if (child.userData.isRoof === true) {
+                child.visible = STATE.showRoof;
+                return;
+            }
+
+            // ВНЕШНИЕ ЭЛЕМЕНТЫ (фасадные стены, наружные двери, уличные лестницы/крыльца и плиты) ВСЕГДА ВИДНЫ!
+            if (child.userData.isExterior === true) {
+                if (child.userData.isDoor) {
+                    child.visible = STATE.showDoors;
+                } else {
+                    child.visible = true;
+                }
+                return;
+            }
+
+            // Скрываем/показываем ТОЛЬКО внутренние перегородки, межкомнатные двери, внутренние ступени и таблички кабинетов
             if (child.userData.isInterior === true) {
                 if (child.userData.isDoor) {
                     child.visible = showInterior && STATE.showDoors;
@@ -396,7 +445,11 @@ function updateFloorsInteriorVisibility() {
             }
             // ВНЕШНИЕ СТЕНЫ и ПЛИТЫ ПЕРЕКРЫТИЙ ВСЕГДА ВИДНЫ!
             else if (child.userData.isInterior === false) {
-                child.visible = true;
+                if (child.userData.isDoor) {
+                    child.visible = STATE.showDoors;
+                } else {
+                    child.visible = true;
+                }
             }
         });
     }
@@ -482,6 +535,10 @@ function updateWallHeights() {
         const stepH = Math.max(0.06, STATE.wallHeight * st.heightRatio);
         st.mesh.scale.y = stepH;
         st.mesh.position.y = (stepH / 2) + st.yOffset;
+    });
+
+    roofMeshes.forEach(r => {
+        r.mesh.position.y = STATE.wallHeight + r.thickness / 2;
     });
 
     labelSprites.forEach(item => {

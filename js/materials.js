@@ -59,5 +59,16 @@ const MATERIALS = {
         color: 0x34d399,
         transparent: true,
         opacity: 0.65
+    }),
+    roof: new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        roughness: 0.85,
+        metalness: 0.08,
+        transparent: false,
+        opacity: 1.0
+    }),
+    edgeRoof: new THREE.LineBasicMaterial({
+        color: 0x334155,
+        linewidth: 1
     })
 };
