@@ -77,8 +77,8 @@ function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, 
     const mesh = new THREE.Mesh(geom, mat);
 
     const h = STATE.wallHeight;
-    mesh.scale.y = h;
-    mesh.position.set(cx, h / 2, cz);
+    mesh.scale.y = h + WALL_SINK;
+    mesh.position.set(cx, (h - WALL_SINK) / 2, cz);
     mesh.rotation.y = -angle;
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -117,8 +117,8 @@ function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle,
     const mesh = new THREE.Mesh(geom, mat);
 
     const h = STATE.wallHeight;
-    mesh.scale.y = h;
-    mesh.position.set(cx, h / 2, cz);
+    mesh.scale.y = h + WALL_SINK;
+    mesh.position.set(cx, (h - WALL_SINK) / 2, cz);
     mesh.rotation.y = -angle;
     mesh.castShadow = true;
     mesh.receiveShadow = true;

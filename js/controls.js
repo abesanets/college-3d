@@ -23,6 +23,13 @@ function initControls(camera, domElement) {
     // Зум к позиции курсора (BIM / CAD Zoom to Pointer)
     domElement.addEventListener('wheel', onPointerZoom, { passive: false });
 
+    // Оповещение цикла рендеринга о движении камеры (On-Demand Render)
+    controls.addEventListener('change', () => {
+        if (typeof requestRender === 'function') {
+            requestRender(15);
+        }
+    });
+
     return controls;
 }
 
@@ -39,14 +46,15 @@ function onPointerZoom(event) {
 
     raycaster.setFromCamera(mouseVec, camera);
 
-    // Проверяем пересечение с геометрией модели
-    // Проверяем видимые меши этажей
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    // Оптимизация: проверяем пересечение только с плитами перекрытий этажей (быстро, O(1))
+    // вместо тяжелого рекурсивного обхода всех тысяч мешей сцены
+    const targets = Array.isArray(slabMeshes) && slabMeshes.length > 0 ? slabMeshes : scene.children;
+    const intersects = raycaster.intersectObjects(targets, false);
     let hitPoint = null;
 
     for (let i = 0; i < intersects.length; i++) {
         const hit = intersects[i];
-        if (hit.object && hit.object.visible && hit.object.isMesh && hit.point) {
+        if (hit.object && hit.object.visible && hit.point) {
             hitPoint = hit.point.clone();
             break;
         }
@@ -78,6 +86,10 @@ function onPointerZoom(event) {
             
             // Также плавно смещаем фокусную точку таргета в сторону курсора
             controls.target.copy(hitPoint).addScaledVector(targetToHit, factor);
+
+            if (typeof requestRender === 'function') {
+                requestRender(20);
+            }
         }
     }
 }

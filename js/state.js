@@ -2,7 +2,7 @@
 // ГЛОБАЛЬНОЕ СОСТОЯНИЕ И КОНСТАНТЫ МОДЕЛИ
 // ==========================================
 
-let scene, camera, renderer, controls;
+let scene, camera, renderer, controls, dirLight1;
 
 // Группы для всех 7 этажей и корпусов
 const floorGroups = {};
@@ -27,6 +27,7 @@ const guideLines = [];
 
 const BASE_WALL_HEIGHT = 2.4;
 const BASE_FLOOR_STEP = 2.65;
+const WALL_SINK = 0.025;
 
 // Габариты Корпуса 2
 const B2_X_START = 20.4;
@@ -82,6 +83,8 @@ const STATE = {
     showStairAxes: false,
     showGuides: true,
     showEdges: true,
+    showShadows: true,
+    preset: 'balance',         // 'eco' | 'balance' | 'ultra'
     targetPos: {
         1: new THREE.Vector3(0, 0, 0),
         2: new THREE.Vector3(0, BASE_FLOOR_STEP * 1, 0),

@@ -26,6 +26,7 @@ function setBuildingFilter(bFilter) {
     recalcTargetPositions();
     updateAlignmentGuides();
     updateStairValidationAxes();
+    saveSettings();
 }
 
 function setSliceFloor(newFloor) {
@@ -58,6 +59,7 @@ function setSliceFloor(newFloor) {
     updateAlignmentGuides();
     updateStairValidationAxes();
     updateExplodeButtonStyle();
+    saveSettings();
 }
 
 function setMode(newMode) {
@@ -93,33 +95,111 @@ function setMode(newMode) {
     updateAlignmentGuides();
     updateStairValidationAxes();
     updateExplodeButtonStyle();
+    saveSettings();
+}
+
+const SETTINGS_KEY = 'college_3d_complex_settings_v1';
+
+function saveSettings() {
+    try {
+        const payload = {
+            preset: STATE.preset || 'balance',
+            showShadows: STATE.showShadows ?? true,
+            wallHeight: STATE.wallHeight,
+            slabOpacity: STATE.slabOpacity,
+            showDoors: STATE.showDoors,
+            showLabels: STATE.showLabels,
+            smartLabelOcclusion: STATE.smartLabelOcclusion,
+            showRoof: STATE.showRoof,
+            showTerritory: STATE.showTerritory,
+            showStairAxes: STATE.showStairAxes,
+            showGuides: STATE.showGuides,
+            showEdges: STATE.showEdges,
+            buildingFilter: STATE.buildingFilter,
+            mode: STATE.mode,
+            sliceMaxFloor: STATE.sliceMaxFloor,
+            explodeGap: STATE.explodeGap,
+            exploded: STATE.exploded
+        };
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
+    } catch (e) {
+        console.warn('LocalStorage save error:', e);
+    }
+}
+
+function restoreSavedSettings() {
+    try {
+        const raw = localStorage.getItem(SETTINGS_KEY);
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (typeof s.preset === 'string') STATE.preset = s.preset;
+        if (typeof s.showShadows === 'boolean') STATE.showShadows = s.showShadows;
+        if (typeof s.wallHeight === 'number') STATE.wallHeight = s.wallHeight;
+        if (typeof s.slabOpacity === 'number') STATE.slabOpacity = s.slabOpacity;
+        if (typeof s.showDoors === 'boolean') STATE.showDoors = s.showDoors;
+        if (typeof s.showLabels === 'boolean') STATE.showLabels = s.showLabels;
+        if (typeof s.smartLabelOcclusion === 'boolean') STATE.smartLabelOcclusion = s.smartLabelOcclusion;
+        if (typeof s.showRoof === 'boolean') STATE.showRoof = s.showRoof;
+        if (typeof s.showTerritory === 'boolean') STATE.showTerritory = s.showTerritory;
+        if (typeof s.showStairAxes === 'boolean') STATE.showStairAxes = s.showStairAxes;
+        if (typeof s.showGuides === 'boolean') STATE.showGuides = s.showGuides;
+        if (typeof s.showEdges === 'boolean') STATE.showEdges = s.showEdges;
+        if (typeof s.buildingFilter === 'string') STATE.buildingFilter = s.buildingFilter;
+        if (typeof s.mode === 'string') STATE.mode = s.mode;
+        if (typeof s.sliceMaxFloor === 'number') STATE.sliceMaxFloor = s.sliceMaxFloor;
+        if (typeof s.explodeGap === 'number') STATE.explodeGap = s.explodeGap;
+        if (typeof s.exploded === 'boolean') STATE.exploded = s.exploded;
+    } catch (e) {
+        console.warn('LocalStorage load error:', e);
+    }
 }
 
 function setupUI() {
-    // Выбор корпуса
+    // Восстанавливаем сохранённые настройки из LocalStorage
+    restoreSavedSettings();
+
+    // 1. Кнопки пресетов графики и производительности
+    document.getElementById('btn-preset-eco')?.addEventListener('click', () => applyPreset('eco'));
+    document.getElementById('btn-preset-balance')?.addEventListener('click', () => applyPreset('balance'));
+    document.getElementById('btn-preset-ultra')?.addEventListener('click', () => applyPreset('ultra'));
+    if (typeof applyPreset === 'function') {
+        applyPreset(STATE.preset || 'balance');
+    }
+
+    // 2. Выбор корпуса
     document.getElementById('btn-bldg-both')?.addEventListener('click', () => setBuildingFilter('both'));
     document.getElementById('btn-bldg-1')?.addEventListener('click', () => setBuildingFilter('1'));
     document.getElementById('btn-bldg-2')?.addEventListener('click', () => setBuildingFilter('2'));
     document.getElementById('btn-bldg-3')?.addEventListener('click', () => setBuildingFilter('3'));
     document.getElementById('btn-bldg-4')?.addEventListener('click', () => setBuildingFilter('4'));
+    setBuildingFilter(STATE.buildingFilter || 'both');
 
-    // Режим этажей
+    // 3. Режим этажей
     document.getElementById('btn-mode-all')?.addEventListener('click', () => setMode('all'));
     document.getElementById('btn-mode-side')?.addEventListener('click', () => setMode('sideBySide'));
     for (let f = 1; f <= 7; f++) {
         document.getElementById('btn-mode-' + f)?.addEventListener('click', () => setMode(String(f)));
     }
 
-    // Срез этажей сверху вниз
+    // 4. Срез этажей сверху вниз
     const sliderSlice = document.getElementById('slider-slice');
     sliderSlice?.addEventListener('input', e => {
         setSliceFloor(parseInt(e.target.value, 10));
     });
 
-    // Взрывной эффект (разнос этажей)
+    if (STATE.mode === 'slice') {
+        setSliceFloor(STATE.sliceMaxFloor || 7);
+    } else {
+        setMode(STATE.mode || 'all');
+    }
+
+    // 5. Взрывной эффект (разнос этажей)
     const btnExplode = document.getElementById('btn-explode');
     const sliderExplode = document.getElementById('slider-explode');
     const valExplode = document.getElementById('explode-val');
+
+    if (sliderExplode) sliderExplode.value = STATE.explodeGap || 0;
+    if (valExplode) valExplode.textContent = (STATE.explodeGap || 0).toFixed(1) + ' м';
 
     btnExplode?.addEventListener('click', () => {
         if (STATE.mode !== 'all' && STATE.mode !== 'slice') {
@@ -140,6 +220,7 @@ function setupUI() {
 
         recalcTargetPositions();
         updateExplodeButtonStyle();
+        saveSettings();
     });
 
     sliderExplode?.addEventListener('input', e => {
@@ -153,77 +234,135 @@ function setupUI() {
             recalcTargetPositions();
             updateExplodeButtonStyle();
         }
+        saveSettings();
     });
 
-    // Высота стен
+    // 6. Высота стен
     const sliderHeight = document.getElementById('slider-wall-height');
     const valHeight = document.getElementById('wall-height-val');
+    if (sliderHeight) sliderHeight.value = STATE.wallHeight;
+    if (valHeight) valHeight.textContent = STATE.wallHeight.toFixed(2) + ' м';
+
     sliderHeight?.addEventListener('input', e => {
         STATE.wallHeight = parseFloat(e.target.value);
         if (valHeight) valHeight.textContent = STATE.wallHeight.toFixed(2) + ' м';
         updateWallHeights();
+        saveSettings();
     });
 
-    // Непрозрачность перекрытий
+    // 7. Непрозрачность перекрытий
     const sliderSlabOpacity = document.getElementById('slider-slab-opacity');
     const valSlabOpacity = document.getElementById('slab-opacity-val');
+    if (sliderSlabOpacity) sliderSlabOpacity.value = STATE.slabOpacity;
+    if (valSlabOpacity) valSlabOpacity.textContent = Math.round(STATE.slabOpacity * 100) + '%';
+    const isTrans = STATE.slabOpacity < 0.99;
+    MATERIALS.slab.transparent = isTrans;
+    MATERIALS.coreSlab.transparent = isTrans;
+    MATERIALS.slab.opacity = STATE.slabOpacity;
+    MATERIALS.coreSlab.opacity = STATE.slabOpacity;
+    MATERIALS.slab.needsUpdate = true;
+    MATERIALS.coreSlab.needsUpdate = true;
+
     sliderSlabOpacity?.addEventListener('input', e => {
         STATE.slabOpacity = parseFloat(e.target.value);
         if (valSlabOpacity) valSlabOpacity.textContent = Math.round(STATE.slabOpacity * 100) + '%';
-        const isTrans = STATE.slabOpacity < 0.99;
-        MATERIALS.slab.transparent = isTrans;
-        MATERIALS.coreSlab.transparent = isTrans;
+        const trans = STATE.slabOpacity < 0.99;
+        MATERIALS.slab.transparent = trans;
+        MATERIALS.coreSlab.transparent = trans;
         MATERIALS.slab.opacity = STATE.slabOpacity;
         MATERIALS.coreSlab.opacity = STATE.slabOpacity;
         MATERIALS.slab.needsUpdate = true;
         MATERIALS.coreSlab.needsUpdate = true;
-        // Обновляем видимость внутренностей при изменении прозрачности
         recalcTargetPositions();
+        saveSettings();
     });
 
-    // Чекбоксы переключателей
-    document.getElementById('toggle-doors')?.addEventListener('change', e => {
+    // 8. Чекбоксы переключателей
+    const tDoors = document.getElementById('toggle-doors');
+    if (tDoors) tDoors.checked = STATE.showDoors;
+    tDoors?.addEventListener('change', e => {
         STATE.showDoors = e.target.checked;
         updateWallHeights();
+        saveSettings();
     });
 
-    document.getElementById('toggle-labels')?.addEventListener('change', e => {
+    const tLabels = document.getElementById('toggle-labels');
+    if (tLabels) tLabels.checked = STATE.showLabels;
+    tLabels?.addEventListener('change', e => {
         STATE.showLabels = e.target.checked;
         updateLabelsVisibility();
+        saveSettings();
     });
 
-    document.getElementById('toggle-smart-occlusion')?.addEventListener('change', e => {
+    const tSmartOcc = document.getElementById('toggle-smart-occlusion');
+    if (tSmartOcc) tSmartOcc.checked = STATE.smartLabelOcclusion;
+    tSmartOcc?.addEventListener('change', e => {
         STATE.smartLabelOcclusion = e.target.checked;
         updateLabelsVisibility();
+        saveSettings();
     });
 
-    document.getElementById('toggle-roof')?.addEventListener('change', e => {
+    const tRoof = document.getElementById('toggle-roof');
+    if (tRoof) tRoof.checked = STATE.showRoof;
+    tRoof?.addEventListener('change', e => {
         STATE.showRoof = e.target.checked;
         updateRoofsVisibility();
+        saveSettings();
     });
 
-    document.getElementById('toggle-territory')?.addEventListener('change', e => {
+    const tTerritory = document.getElementById('toggle-territory');
+    if (tTerritory) tTerritory.checked = STATE.showTerritory;
+    tTerritory?.addEventListener('change', e => {
         STATE.showTerritory = e.target.checked;
         updateTerritoryVisibility();
+        saveSettings();
     });
 
-    document.getElementById('toggle-stair-axes')?.addEventListener('change', e => {
+    const tStairAxes = document.getElementById('toggle-stair-axes');
+    if (tStairAxes) tStairAxes.checked = STATE.showStairAxes;
+    tStairAxes?.addEventListener('change', e => {
         STATE.showStairAxes = e.target.checked;
         updateStairValidationAxes();
+        saveSettings();
     });
 
-    document.getElementById('toggle-guides')?.addEventListener('change', e => {
+    const tGuides = document.getElementById('toggle-guides');
+    if (tGuides) tGuides.checked = STATE.showGuides;
+    tGuides?.addEventListener('change', e => {
         STATE.showGuides = e.target.checked;
         updateAlignmentGuides();
+        saveSettings();
     });
 
-    document.getElementById('toggle-edges')?.addEventListener('change', e => {
+    const tEdges = document.getElementById('toggle-edges');
+    if (tEdges) tEdges.checked = STATE.showEdges;
+    wallEdges.forEach(line => line.visible = STATE.showEdges);
+    doorEdges.forEach(line => line.visible = STATE.showEdges);
+    tEdges?.addEventListener('change', e => {
         STATE.showEdges = e.target.checked;
         wallEdges.forEach(line => line.visible = STATE.showEdges);
         doorEdges.forEach(line => line.visible = STATE.showEdges);
+        if (typeof requestRender === 'function') requestRender(15);
+        saveSettings();
     });
 
-    // Кнопки ракурсов
+    const tShadows = document.getElementById('toggle-shadows');
+    if (tShadows) tShadows.checked = STATE.showShadows;
+    if (renderer && renderer.shadowMap) {
+        renderer.shadowMap.enabled = STATE.showShadows;
+        renderer.shadowMap.needsUpdate = true;
+    }
+    tShadows?.addEventListener('change', e => {
+        STATE.showShadows = e.target.checked;
+        if (renderer && renderer.shadowMap) {
+            renderer.shadowMap.enabled = STATE.showShadows;
+            renderer.shadowMap.needsUpdate = true;
+        }
+        if (typeof requestRender === 'function') requestRender(20);
+        saveSettings();
+    });
+
+    // 9. Кнопки ракурсов
     document.getElementById('btn-view-3d')?.addEventListener('click', () => {
         const cx = getActiveCenterX();
         const cz = getActiveCenterZ();
@@ -275,3 +414,4 @@ function setupUI() {
 
     updateExplodeButtonStyle();
 }
+

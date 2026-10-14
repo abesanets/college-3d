@@ -139,38 +139,41 @@
 
         <hr class="panel-divider">
 
-        <!-- Ползунки параметров -->
-        <div class="flex flex-col gap-2.5">
-            <div>
-                <div class="flex justify-between items-center mb-1 text-[11px]">
-                    <span class="text-slate-300">Высота стен</span>
-                    <span id="wall-height-val" class="text-slate-300 font-mono text-[11px] bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">2.40 м</span>
-                </div>
-                <input id="slider-wall-height" type="range" min="1.0" max="4.5" step="0.1" value="2.4" class="w-full cursor-pointer">
+        <!-- Предустановки графики и производительности -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5 text-[11px] flex justify-between items-center">
+                <span>Графика</span>
+                <span class="text-slate-500 font-normal text-[10px]">режим работы</span>
             </div>
-
-            <div>
-                <div class="flex justify-between items-center mb-1 text-[11px]">
-                    <span class="text-slate-300">Непрозрачность плит</span>
-                    <span id="slab-opacity-val" class="text-slate-300 font-mono text-[11px] bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">100%</span>
-                </div>
-                <input id="slider-slab-opacity" type="range" min="0.25" max="1.0" step="0.05" value="1.0" class="w-full cursor-pointer">
+            <div class="grid grid-cols-3 gap-1.5 mb-2">
+                <button id="btn-preset-eco" class="preset-btn btn-interactive bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-1 rounded-lg border border-slate-700/80 text-center text-xs">
+                    Тихий
+                </button>
+                <button id="btn-preset-balance" class="preset-btn btn-interactive active bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-1 rounded-lg border border-slate-700/80 text-center text-xs">
+                    Баланс
+                </button>
+                <button id="btn-preset-ultra" class="preset-btn btn-interactive bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-1 rounded-lg border border-slate-700/80 text-center text-xs">
+                    Ультра
+                </button>
             </div>
+            <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
+                <span class="text-slate-300">Мягкие тени</span>
+                <input id="toggle-shadows" type="checkbox" checked class="switch-input">
+                <div class="switch-track"><div class="switch-thumb"></div></div>
+            </label>
         </div>
 
         <hr class="panel-divider">
 
-        <!-- Переключатели элементов -->
-        <div>
-            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5 text-[11px]">
-                Отображение
-            </div>
-            <div class="flex flex-col gap-1">
-                <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
-                    <span class="text-slate-300">Двери и проходы</span>
-                    <input id="toggle-doors" type="checkbox" checked class="switch-input">
-                    <div class="switch-track"><div class="switch-thumb"></div></div>
-                </label>
+        <!-- Блок 1: Помещения и кабинеты -->
+        <details id="details-rooms" class="group bg-slate-800/40 border border-slate-700/60 rounded-xl p-2.5 transition">
+            <summary class="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200">
+                <span>Кабинеты и проходы</span>
+                <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <div class="mt-2 flex flex-col gap-1 border-t border-slate-700/40 pt-2">
                 <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
                     <span class="text-slate-300">Номера кабинетов</span>
                     <input id="toggle-labels" type="checkbox" checked class="switch-input">
@@ -182,18 +185,58 @@
                     <div class="switch-track"><div class="switch-thumb"></div></div>
                 </label>
                 <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
-                    <span class="text-slate-300">Крыша</span>
+                    <span class="text-slate-300">Двери и проходы</span>
+                    <input id="toggle-doors" type="checkbox" checked class="switch-input">
+                    <div class="switch-track"><div class="switch-thumb"></div></div>
+                </label>
+            </div>
+        </details>
+
+        <!-- Блок 2: Конструктив здания -->
+        <details id="details-geometry" class="group bg-slate-800/40 border border-slate-700/60 rounded-xl p-2.5 transition">
+            <summary class="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200">
+                <span>Стены и перекрытия</span>
+                <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <div class="mt-2.5 flex flex-col gap-2.5 border-t border-slate-700/40 pt-2.5">
+                <div>
+                    <div class="flex justify-between items-center mb-1 text-[11px]">
+                        <span class="text-slate-300">Высота стен</span>
+                        <span id="wall-height-val" class="text-slate-300 font-mono text-[11px] bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">2.40 м</span>
+                    </div>
+                    <input id="slider-wall-height" type="range" min="1.0" max="4.5" step="0.1" value="2.4" class="w-full cursor-pointer">
+                </div>
+
+                <div>
+                    <div class="flex justify-between items-center mb-1 text-[11px]">
+                        <span class="text-slate-300">Непрозрачность плит</span>
+                        <span id="slab-opacity-val" class="text-slate-300 font-mono text-[11px] bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">100%</span>
+                    </div>
+                    <input id="slider-slab-opacity" type="range" min="0.25" max="1.0" step="0.05" value="1.0" class="w-full cursor-pointer">
+                </div>
+
+                <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors border-t border-slate-700/30 pt-1.5">
+                    <span class="text-slate-300">Крыша здания</span>
                     <input id="toggle-roof" type="checkbox" class="switch-input">
                     <div class="switch-track"><div class="switch-thumb"></div></div>
                 </label>
+            </div>
+        </details>
+
+        <!-- Блок 3: Разметка и оси чертежа -->
+        <details id="details-guides" class="group bg-slate-800/40 border border-slate-700/60 rounded-xl p-2.5 transition">
+            <summary class="flex items-center justify-between cursor-pointer list-none select-none text-[11px] font-semibold uppercase tracking-wider text-slate-400 hover:text-slate-200">
+                <span>Чертёж и разметка</span>
+                <svg class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200 group-open:rotate-180" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </summary>
+            <div class="mt-2 flex flex-col gap-1 border-t border-slate-700/40 pt-2">
                 <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
-                    <span class="text-slate-300">Прилегающая территория</span>
-                    <input id="toggle-territory" type="checkbox" class="switch-input">
-                    <div class="switch-track"><div class="switch-thumb"></div></div>
-                </label>
-                <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
-                    <span class="text-slate-300">Оси совпадения лестниц</span>
-                    <input id="toggle-stair-axes" type="checkbox" class="switch-input">
+                    <span class="text-slate-300">Контуры чертежа (Edges)</span>
+                    <input id="toggle-edges" type="checkbox" checked class="switch-input">
                     <div class="switch-track"><div class="switch-thumb"></div></div>
                 </label>
                 <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
@@ -202,12 +245,17 @@
                     <div class="switch-track"><div class="switch-thumb"></div></div>
                 </label>
                 <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
-                    <span class="text-slate-300">Контуры чертежа (Edges)</span>
-                    <input id="toggle-edges" type="checkbox" checked class="switch-input">
+                    <span class="text-slate-300">Оси шахт лестниц</span>
+                    <input id="toggle-stair-axes" type="checkbox" class="switch-input">
+                    <div class="switch-track"><div class="switch-thumb"></div></div>
+                </label>
+                <label class="flex items-center justify-between cursor-pointer py-1 px-1 rounded-md hover:bg-white/[0.04] transition-colors">
+                    <span class="text-slate-300">Прилегающая территория</span>
+                    <input id="toggle-territory" type="checkbox" class="switch-input">
                     <div class="switch-track"><div class="switch-thumb"></div></div>
                 </label>
             </div>
-        </div>
+        </details>
     </div>
 
     <!-- Информационная подсказка по управлению внизу экрана -->
