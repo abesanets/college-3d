@@ -134,8 +134,12 @@ function restoreSavedSettings() {
         const s = JSON.parse(raw);
         if (typeof s.preset === 'string') STATE.preset = s.preset;
         if (typeof s.showShadows === 'boolean') STATE.showShadows = s.showShadows;
-        if (typeof s.wallHeight === 'number') STATE.wallHeight = s.wallHeight;
-        if (typeof s.slabOpacity === 'number') STATE.slabOpacity = s.slabOpacity;
+        if (typeof s.wallHeight === 'number' && !isNaN(s.wallHeight) && s.wallHeight >= 1.0 && s.wallHeight <= 4.5) {
+            STATE.wallHeight = s.wallHeight;
+        }
+        if (typeof s.slabOpacity === 'number' && !isNaN(s.slabOpacity) && s.slabOpacity >= 0.25 && s.slabOpacity <= 1.0) {
+            STATE.slabOpacity = s.slabOpacity;
+        }
         if (typeof s.showDoors === 'boolean') STATE.showDoors = s.showDoors;
         if (typeof s.showLabels === 'boolean') STATE.showLabels = s.showLabels;
         if (typeof s.smartLabelOcclusion === 'boolean') STATE.smartLabelOcclusion = s.smartLabelOcclusion;
@@ -154,16 +158,103 @@ function restoreSavedSettings() {
     }
 }
 
+function resetSettingsToDefault() {
+    try {
+        localStorage.removeItem(SETTINGS_KEY);
+    } catch (e) {}
+
+    STATE.preset = 'balance';
+    STATE.showShadows = true;
+    STATE.wallHeight = BASE_WALL_HEIGHT;
+    STATE.slabOpacity = 1.0;
+    STATE.showDoors = true;
+    STATE.showLabels = true;
+    STATE.smartLabelOcclusion = true;
+    STATE.showRoof = false;
+    STATE.showTerritory = false;
+    STATE.showStairAxes = false;
+    STATE.showGuides = true;
+    STATE.showEdges = true;
+    STATE.buildingFilter = 'both';
+    STATE.mode = 'all';
+    STATE.sliceMaxFloor = 7;
+    STATE.explodeGap = 0.0;
+    STATE.exploded = false;
+
+    // Сброс значений в контролах UI
+    const sliderHeight = document.getElementById('slider-wall-height');
+    const valHeight = document.getElementById('wall-height-val');
+    if (sliderHeight) sliderHeight.value = BASE_WALL_HEIGHT;
+    if (valHeight) valHeight.textContent = BASE_WALL_HEIGHT.toFixed(2) + ' м';
+
+    const sliderSlab = document.getElementById('slider-slab-opacity');
+    const valSlab = document.getElementById('slab-opacity-val');
+    if (sliderSlab) sliderSlab.value = 1.0;
+    if (valSlab) valSlab.textContent = '100%';
+
+    const sliderExplode = document.getElementById('slider-explode');
+    const valExplode = document.getElementById('explode-val');
+    if (sliderExplode) sliderExplode.value = 0;
+    if (valExplode) valExplode.textContent = '0.0 м';
+
+    const sliderSlice = document.getElementById('slider-slice');
+    const valSlice = document.getElementById('slice-val');
+    if (sliderSlice) sliderSlice.value = 7;
+    if (valSlice) valSlice.textContent = '1–7 эт.';
+
+    const tDoors = document.getElementById('toggle-doors');
+    if (tDoors) tDoors.checked = true;
+    const tLabels = document.getElementById('toggle-labels');
+    if (tLabels) tLabels.checked = true;
+    const tSmartOcc = document.getElementById('toggle-smart-occlusion');
+    if (tSmartOcc) tSmartOcc.checked = true;
+    const tRoof = document.getElementById('toggle-roof');
+    if (tRoof) tRoof.checked = false;
+    const tTerritory = document.getElementById('toggle-territory');
+    if (tTerritory) tTerritory.checked = false;
+    const tStairAxes = document.getElementById('toggle-stair-axes');
+    if (tStairAxes) tStairAxes.checked = false;
+    const tGuides = document.getElementById('toggle-guides');
+    if (tGuides) tGuides.checked = true;
+    const tEdges = document.getElementById('toggle-edges');
+    if (tEdges) tEdges.checked = true;
+    const tShadows = document.getElementById('toggle-shadows');
+    if (tShadows) tShadows.checked = true;
+
+    MATERIALS.slab.transparent = false;
+    MATERIALS.coreSlab.transparent = false;
+    MATERIALS.slab.opacity = 1.0;
+    MATERIALS.coreSlab.opacity = 1.0;
+    MATERIALS.slab.needsUpdate = true;
+    MATERIALS.coreSlab.needsUpdate = true;
+
+    applyPreset('balance', false);
+    setBuildingFilter('both');
+    setMode('all');
+
+    if (typeof updateWallHeights === 'function') updateWallHeights();
+    if (typeof updateEdgesVisibility === 'function') updateEdgesVisibility();
+    if (typeof updateAlignmentGuides === 'function') updateAlignmentGuides();
+    if (typeof updateStairValidationAxes === 'function') updateStairValidationAxes();
+    if (typeof updateLabelsVisibility === 'function') updateLabelsVisibility();
+    if (typeof updateRoofsVisibility === 'function') updateRoofsVisibility();
+    if (typeof updateTerritoryVisibility === 'function') updateTerritoryVisibility();
+    updateExplodeButtonStyle();
+    saveSettings();
+}
+
 function setupUI() {
-    // Восстанавливаем сохранённые настройки из LocalStorage
-    restoreSavedSettings();
+    // 0. Кнопка сброса настроек
+    document.getElementById('btn-reset-settings')?.addEventListener('click', () => {
+        resetSettingsToDefault();
+    });
 
     // 1. Кнопки пресетов графики и производительности
     document.getElementById('btn-preset-eco')?.addEventListener('click', () => applyPreset('eco'));
     document.getElementById('btn-preset-balance')?.addEventListener('click', () => applyPreset('balance'));
     document.getElementById('btn-preset-ultra')?.addEventListener('click', () => applyPreset('ultra'));
     if (typeof applyPreset === 'function') {
-        applyPreset(STATE.preset || 'balance');
+        applyPreset(STATE.preset || 'balance', false);
     }
 
     // 2. Выбор корпуса
@@ -336,12 +427,15 @@ function setupUI() {
 
     const tEdges = document.getElementById('toggle-edges');
     if (tEdges) tEdges.checked = STATE.showEdges;
-    wallEdges.forEach(line => line.visible = STATE.showEdges);
-    doorEdges.forEach(line => line.visible = STATE.showEdges);
+    if (typeof updateEdgesVisibility === 'function') updateEdgesVisibility();
     tEdges?.addEventListener('change', e => {
         STATE.showEdges = e.target.checked;
-        wallEdges.forEach(line => line.visible = STATE.showEdges);
-        doorEdges.forEach(line => line.visible = STATE.showEdges);
+        if (typeof updateEdgesVisibility === 'function') {
+            updateEdgesVisibility();
+        } else {
+            wallEdges.forEach(line => line.visible = STATE.showEdges);
+            doorEdges.forEach(line => line.visible = STATE.showEdges);
+        }
         if (typeof requestRender === 'function') requestRender(15);
         saveSettings();
     });
@@ -412,6 +506,13 @@ function setupUI() {
         }
     });
 
+    if (typeof updateWallHeights === 'function') updateWallHeights();
+    if (typeof updateEdgesVisibility === 'function') updateEdgesVisibility();
+    if (typeof updateAlignmentGuides === 'function') updateAlignmentGuides();
+    if (typeof updateStairValidationAxes === 'function') updateStairValidationAxes();
+    if (typeof updateLabelsVisibility === 'function') updateLabelsVisibility();
+    if (typeof updateRoofsVisibility === 'function') updateRoofsVisibility();
+    if (typeof updateTerritoryVisibility === 'function') updateTerritoryVisibility();
     updateExplodeButtonStyle();
 }
 

@@ -3,6 +3,19 @@
 // ==========================================
 
 function init() {
+    // 0. Восстанавливаем сохранённые настройки из LocalStorage до сборки сцены и геометрии
+    if (typeof restoreSavedSettings === 'function') {
+        restoreSavedSettings();
+    }
+
+    if (STATE.slabOpacity !== undefined && MATERIALS.slab && MATERIALS.coreSlab) {
+        const isTrans = STATE.slabOpacity < 0.99;
+        MATERIALS.slab.transparent = isTrans;
+        MATERIALS.coreSlab.transparent = isTrans;
+        MATERIALS.slab.opacity = STATE.slabOpacity;
+        MATERIALS.coreSlab.opacity = STATE.slabOpacity;
+    }
+
     const container = document.getElementById('canvas-container');
 
     scene = new THREE.Scene();
@@ -105,6 +118,7 @@ function init() {
     buildAlignmentGuides();
     buildStairValidationAxes();
 
+    updateWallHeights();
     recalcTargetPositions();
     for (let f = 1; f <= 7; f++) {
         floorGroups[f].position.copy(STATE.targetPos[f]);
@@ -113,6 +127,7 @@ function init() {
     updateRoofsVisibility();
     updateTerritoryVisibility();
     updateLabelsVisibility();
+    updateEdgesVisibility();
     updateAlignmentGuides();
     updateStairValidationAxes();
     setupUI();
@@ -155,38 +170,67 @@ function buildStairValidationAxes() {
 }
 
 function updateStairValidationAxes() {
-    const show = STATE.showStairAxes && (STATE.mode === 'all' || STATE.mode === 'slice');
+    const show = STATE.showStairAxes;
     stairValidationGroup.visible = show;
     if (!show) return;
 
-    const botY = floorGroups[1].position.y;
-    const maxActiveF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : 7;
+    let botY = floorGroups[1] ? floorGroups[1].position.y : 0;
+    let maxActiveF = 7;
+
+    const isSingleFloor = (STATE.mode !== 'all' && STATE.mode !== 'slice' && STATE.mode !== 'sideBySide');
+    let selectedFloor = 1;
+    if (isSingleFloor) {
+        selectedFloor = parseInt(STATE.mode, 10);
+        maxActiveF = selectedFloor;
+        botY = 0;
+    } else if (STATE.mode === 'slice') {
+        maxActiveF = STATE.sliceMaxFloor;
+    }
 
     stairValidationItems.forEach(item => {
-        const effectiveMax = Math.min(item.maxFloor, maxActiveF);
-        const visibleByBuilding =
-            (effectiveMax >= 1) &&
+        let visibleByBuilding =
             (STATE.buildingFilter === 'both' ||
             (STATE.buildingFilter === '1' && item.bldg === 1) ||
             (STATE.buildingFilter === '2' && item.bldg === 2) ||
             (STATE.buildingFilter === '3' && item.bldg === 3) ||
             (STATE.buildingFilter === '4' && item.bldg === 4));
 
+        if (isSingleFloor) {
+            if (item.maxFloor < selectedFloor) {
+                visibleByBuilding = false;
+            }
+        }
+
         item.centerLine.visible = visibleByBuilding;
         item.wireframeBox.visible = visibleByBuilding;
         if (!visibleByBuilding) return;
 
-        const topY = floorGroups[effectiveMax].position.y + STATE.wallHeight;
-        const totalH = Math.max(0.5, topY - botY);
+        let topY, totalH;
+        if (isSingleFloor) {
+            topY = STATE.wallHeight;
+            totalH = STATE.wallHeight + 0.3;
+            const posAttr = item.centerLine.geometry.attributes.position;
+            posAttr.setXYZ(0, item.cx, -0.2, item.cz);
+            posAttr.setXYZ(1, item.cx, topY + 0.5, item.cz);
+            posAttr.needsUpdate = true;
+            item.centerLine.computeLineDistances();
 
-        const posAttr = item.centerLine.geometry.attributes.position;
-        posAttr.setXYZ(0, item.cx, botY - 0.3, item.cz);
-        posAttr.setXYZ(1, item.cx, topY + 0.8, item.cz);
-        posAttr.needsUpdate = true;
-        item.centerLine.computeLineDistances();
+            item.wireframeBox.scale.y = totalH;
+            item.wireframeBox.position.set(item.cx, totalH / 2 - 0.1, item.cz);
+        } else {
+            const effectiveMax = Math.min(item.maxFloor, maxActiveF);
+            topY = (floorGroups[effectiveMax] ? floorGroups[effectiveMax].position.y : 0) + STATE.wallHeight;
+            totalH = Math.max(0.5, topY - botY);
 
-        item.wireframeBox.scale.y = totalH;
-        item.wireframeBox.position.set(item.cx, botY + totalH / 2, item.cz);
+            const posAttr = item.centerLine.geometry.attributes.position;
+            posAttr.setXYZ(0, item.cx, botY - 0.3, item.cz);
+            posAttr.setXYZ(1, item.cx, topY + 0.8, item.cz);
+            posAttr.needsUpdate = true;
+            item.centerLine.computeLineDistances();
+
+            item.wireframeBox.scale.y = totalH;
+            item.wireframeBox.position.set(item.cx, botY + totalH / 2, item.cz);
+        }
     });
 }
 
@@ -270,27 +314,48 @@ function buildAlignmentGuides() {
 }
 
 function updateAlignmentGuides() {
-    const show = STATE.showGuides && (STATE.mode === 'all' || STATE.mode === 'slice');
+    const show = STATE.showGuides;
     alignmentGuidesGroup.visible = show;
     if (!show) return;
 
-    const botY = floorGroups[1].position.y;
-    const maxActiveF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : 7;
+    let botY = floorGroups[1] ? floorGroups[1].position.y : 0;
+    let maxActiveF = 7;
+
+    const isSingleFloor = (STATE.mode !== 'all' && STATE.mode !== 'slice' && STATE.mode !== 'sideBySide');
+    let selectedFloor = 1;
+    if (isSingleFloor) {
+        selectedFloor = parseInt(STATE.mode, 10);
+        maxActiveF = selectedFloor;
+        botY = 0;
+    } else if (STATE.mode === 'slice') {
+        maxActiveF = STATE.sliceMaxFloor;
+    }
 
     guideLines.forEach(item => {
-        const effectiveMax = Math.min(item.maxFloor, maxActiveF);
-        const visibleByBuilding =
-            (effectiveMax >= 1) &&
+        let visibleByBuilding =
             (STATE.buildingFilter === 'both' ||
             (STATE.buildingFilter === '1' && item.bldg === 1) ||
             (STATE.buildingFilter === '2' && item.bldg === 2) ||
             (STATE.buildingFilter === '3' && item.bldg === 3) ||
             (STATE.buildingFilter === '4' && item.bldg === 4));
 
+        if (isSingleFloor) {
+            if (item.maxFloor < selectedFloor) {
+                visibleByBuilding = false;
+            }
+        }
+
         item.line.visible = visibleByBuilding;
         if (!visibleByBuilding) return;
 
-        const topY = floorGroups[effectiveMax].position.y + STATE.wallHeight;
+        let topY;
+        if (isSingleFloor) {
+            topY = STATE.wallHeight;
+        } else {
+            const effectiveMax = Math.min(item.maxFloor, maxActiveF);
+            topY = (floorGroups[effectiveMax] ? floorGroups[effectiveMax].position.y : 0) + STATE.wallHeight;
+        }
+
         const posAttr = item.line.geometry.attributes.position;
         posAttr.setXYZ(0, item.gx, botY, item.gz);
         posAttr.setXYZ(1, item.gx, topY, item.gz);
@@ -436,6 +501,25 @@ function updateLabelsVisibility() {
 // В режиме стопки скрываются ТОЛЬКО скрытые внутренние перегородки комнат,
 // а внешние несущие стены (фасад) и плиты перекрытий ВСЕГДА остаются видимыми!
 // ==========================================
+function updateEdgesVisibility() {
+    wallEdges.forEach(line => {
+        if (line) line.visible = STATE.showEdges;
+    });
+    doorEdges.forEach(line => {
+        if (line) line.visible = STATE.showEdges;
+    });
+    for (let f = 1; f <= 7; f++) {
+        if (floorGroups[f]) {
+            floorGroups[f].traverse(child => {
+                if (child.isLineSegments) {
+                    child.visible = STATE.showEdges;
+                }
+            });
+        }
+    }
+    requestRender(20);
+}
+
 function updateFloorsInteriorVisibility() {
     const isStack = (STATE.mode === 'all' || STATE.mode === 'slice') && (!STATE.exploded || STATE.explodeGap < 0.2) && (STATE.slabOpacity > 0.85);
 
@@ -446,6 +530,12 @@ function updateFloorsInteriorVisibility() {
 
         group.traverse(child => {
             if (!child.userData) return;
+
+            // КОНТУРЫ / РЁБРА (LineSegments): строго подчиняются переключателю STATE.showEdges!
+            if (child.isLineSegments) {
+                child.visible = STATE.showEdges;
+                return;
+            }
 
             // КРЫША: управляется исключительно переключателем STATE.showRoof
             if (child.userData.isRoof === true) {
@@ -612,7 +702,7 @@ function updateShadows() {
     }
 }
 
-function applyPreset(presetName) {
+function applyPreset(presetName, shouldSave = true) {
     if (presetName !== 'eco' && presetName !== 'balance' && presetName !== 'ultra') {
         presetName = 'balance';
     }
@@ -668,7 +758,7 @@ function applyPreset(presetName) {
         requestRender(30);
     }
 
-    if (typeof saveSettings === 'function') {
+    if (shouldSave && typeof saveSettings === 'function') {
         saveSettings();
     }
 }

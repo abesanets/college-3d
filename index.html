@@ -36,6 +36,17 @@
     <!-- Правая панель контроллеров -->
     <div class="ui-overlay fixed top-4 right-4 z-20 glass-panel custom-scroll rounded-xl p-4 w-80 max-h-[94vh] overflow-y-auto flex flex-col gap-3 text-xs">
         
+        <!-- Шапка панели и сброс настроек -->
+        <div class="flex items-center justify-between pb-1 border-b border-slate-700/50">
+            <span class="text-slate-400 font-semibold uppercase tracking-wider text-[11px]">Управление моделью</span>
+            <button id="btn-reset-settings" title="Сбросить все настройки по умолчанию" class="btn-interactive text-[11px] text-slate-400 hover:text-amber-300 flex items-center gap-1 py-0.5 px-2 rounded-md bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 transition-all">
+                <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Сброс</span>
+            </button>
+        </div>
+
         <!-- Выбор корпуса -->
         <div>
             <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5 text-[11px]">
