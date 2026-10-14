@@ -55,9 +55,9 @@
                 { from: 0.8, to: 2.6, type: 'door' }
             ], INNER_T);
 
-            // Южная стена ядра со входом в южный С/У
+            // Южная стена ядра со входом в шлюз южного С/У
             addWallLine(targetGroup, -1.2, 4.0, 8.6, 4.0, [
-                { from: 4.9, to: 5.9, type: 'door' }
+                { from: 7.2, to: 8.2, type: 'door' }
             ], INNER_T);
 
             // Восточная стена ядра (разделяет С/У и лестничный блок)
@@ -92,22 +92,32 @@
             addWallLine(targetGroup, 4.8, -4.0, 4.8, 4.0, [], INNER_T);
 
             // --- САНИТАРНЫЙ БЛОК (С/У) ---
-            // Центральная стена между северным и южным С/У
+            // Центральная капитальная стена между северным и южным С/У
             addWallLine(targetGroup, 4.8, 0.0, 8.6, 0.0, [], INNER_T);
 
-            // Северный С/У: предбанник и 2 кабинки
-            addWallLine(targetGroup, 6.4, -4.0, 6.4, 0.0, [
-                { from: -3.6, to: -2.6, type: 'door' },
-                { from: -1.6, to: -0.6, type: 'door' }
+            // 1) СЕВЕРНЫЙ С/У (Z [-4.0..0.0]): предбанник с севера, кабинки одна за другой по оси X
+            // Перегородка кабинного блока со входами в кабинки из предбанника
+            addWallLine(targetGroup, 5.7, -1.6, 8.6, -1.6, [
+                { from: 5.9, to: 6.9, type: 'door' },
+                { from: 7.3, to: 8.3, type: 'door' }
             ], 0.12);
-            addWallLine(targetGroup, 6.4, -2.0, 8.6, -2.0, [], 0.12);
+            // Торцевая стенка кабинок
+            addWallLine(targetGroup, 5.7, -1.6, 5.7, 0.0, [], 0.12);
+            // Поперечная перегородка между кабинками
+            addWallLine(targetGroup, 7.1, -1.6, 7.1, 0.0, [], 0.12);
 
-            // Южный С/У: предбанник и 2 кабинки
-            addWallLine(targetGroup, 6.4, 0.0, 6.4, 4.0, [
-                { from: 0.6, to: 1.6, type: 'door' },
-                { from: 2.6, to: 3.6, type: 'door' }
+            // 2) ЮЖНЫЙ С/У (Z [0.0..4.0]): шлюз у восточной стены, предбанник и кабинки бок о бок по оси Z
+            // Стена шлюза/тамбура с дверью в предбанник
+            addWallLine(targetGroup, 4.8, 2.6, 8.6, 2.6, [
+                { from: 5.0, to: 6.0, type: 'door' }
             ], 0.12);
-            addWallLine(targetGroup, 6.4, 2.0, 8.6, 2.0, [], 0.12);
+            // Стена входов в кабинки из предбанника
+            addWallLine(targetGroup, 6.4, 0.0, 6.4, 2.6, [
+                { from: 0.3, to: 1.2, type: 'door' },
+                { from: 1.5, to: 2.4, type: 'door' }
+            ], 0.12);
+            // Разделительная перегородка между двумя кабинками
+            addWallLine(targetGroup, 6.4, 1.3, 8.6, 1.3, [], 0.12);
 
             // 4. Две параллельные лестничные клетки ЛК№1 и ЛК№2
             // Северная стена ЛК№1 со входом из северного коридора
@@ -128,8 +138,8 @@
             buildStaircaseUnit(targetGroup, 0.0, 3.8, 1.9, false);
 
             // Общие плашки ядра и лестниц
-            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.6, -2.0, true);
-            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.6, 2.0, true);
+            addRoomLabel3D(targetGroup, floorNum, 'С/У', 6.2, -2.8, true);
+            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.6, 1.3, true);
             addRoomLabel3D(targetGroup, floorNum, 'ЛК№1', 9.4, -1.9, true);
             addRoomLabel3D(targetGroup, floorNum, 'ЛК№2', 9.4, 1.9, true);
             addRoomLabel3D(targetGroup, floorNum, 'Лифтовой\nхолл', 1.8, 1.5, false, true);
