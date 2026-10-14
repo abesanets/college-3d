@@ -70,5 +70,100 @@ const MATERIALS = {
     edgeRoof: new THREE.LineBasicMaterial({
         color: 0x334155,
         linewidth: 1
+    }),
+
+    // Материалы прилегающей территории и благоустройства
+    asphaltRoad: new THREE.MeshStandardMaterial({
+        color: 0x23272f,
+        roughness: 0.92,
+        metalness: 0.04
+    }),
+    asphaltDriveway: new THREE.MeshStandardMaterial({
+        color: 0x2b313a,
+        roughness: 0.90,
+        metalness: 0.05
+    }),
+    curb: new THREE.MeshStandardMaterial({
+        color: 0x38414e,
+        roughness: 0.85,
+        metalness: 0.05
+    }),
+    sidewalk: new THREE.MeshStandardMaterial({
+        color: 0x4e5765,
+        roughness: 0.90,
+        metalness: 0.04
+    }),
+    lawn: new THREE.MeshStandardMaterial({
+        color: 0x2a4435,
+        roughness: 0.95,
+        metalness: 0.0
+    }),
+    roadMarkingWhite: new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        roughness: 0.5,
+        metalness: 0.05,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2
+    }),
+    roadMarkingYellow: new THREE.MeshStandardMaterial({
+        color: 0xf59e0b,
+        roughness: 0.5,
+        metalness: 0.05,
+        polygonOffset: true,
+        polygonOffsetFactor: -2,
+        polygonOffsetUnits: -2
+    }),
+    shelterFrame: new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        roughness: 0.35,
+        metalness: 0.8
+    }),
+    shelterGlass: new THREE.MeshStandardMaterial({
+        color: 0x94a3b8,
+        transparent: true,
+        opacity: 0.45,
+        roughness: 0.1,
+        metalness: 0.1
+    }),
+    shelterRoof: new THREE.MeshStandardMaterial({
+        color: 0x0f172a,
+        roughness: 0.5,
+        metalness: 0.2
+    }),
+    shelterBench: new THREE.MeshStandardMaterial({
+        color: 0x92400e,
+        roughness: 0.75
+    }),
+    treeTrunk: new THREE.MeshStandardMaterial({
+        color: 0x5b3a29,
+        roughness: 0.9
+    }),
+    treeFoliage: new THREE.MeshStandardMaterial({
+        color: 0x1e4620,
+        roughness: 0.85,
+        metalness: 0.0
+    }),
+    treeFoliageLight: new THREE.MeshStandardMaterial({
+        color: 0x2d5a27,
+        roughness: 0.85,
+        metalness: 0.0
+    }),
+    poleMetal: new THREE.MeshStandardMaterial({
+        color: 0x475569,
+        roughness: 0.4,
+        metalness: 0.7
+    }),
+    signBlue: new THREE.MeshStandardMaterial({
+        color: 0x1d4ed8,
+        roughness: 0.4
+    }),
+    signRed: new THREE.MeshStandardMaterial({
+        color: 0xdc2626,
+        roughness: 0.4
+    }),
+    signWhite: new THREE.MeshStandardMaterial({
+        color: 0xf8fafc,
+        roughness: 0.4
     })
 };

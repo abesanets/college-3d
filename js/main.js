@@ -68,6 +68,9 @@ function init() {
     stairValidationGroup = new THREE.Group();
     scene.add(stairValidationGroup);
 
+    territoryGroup = new THREE.Group();
+    scene.add(territoryGroup);
+
     // Сборка Корпуса 1 (Этажи 1–7)
     buildFloor1(bldg1FloorGroups[1]);
     buildFloor2(bldg1FloorGroups[2]);
@@ -92,6 +95,7 @@ function init() {
     buildBuilding4Floor3(bldg4FloorGroups[3]);
 
     buildRoofs();
+    buildTerritory();
     buildAlignmentGuides();
     buildStairValidationAxes();
 
@@ -101,6 +105,7 @@ function init() {
     }
 
     updateRoofsVisibility();
+    updateTerritoryVisibility();
     updateLabelsVisibility();
     updateAlignmentGuides();
     updateStairValidationAxes();
@@ -201,6 +206,12 @@ function updateRoofsVisibility() {
     roofMeshes.forEach(item => {
         item.mesh.visible = STATE.showRoof;
     });
+}
+
+function updateTerritoryVisibility() {
+    if (territoryGroup) {
+        territoryGroup.visible = STATE.showTerritory;
+    }
 }
 
 function buildAlignmentGuides() {

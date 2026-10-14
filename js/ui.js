@@ -202,6 +202,11 @@ function setupUI() {
         updateRoofsVisibility();
     });
 
+    document.getElementById('toggle-territory')?.addEventListener('change', e => {
+        STATE.showTerritory = e.target.checked;
+        updateTerritoryVisibility();
+    });
+
     document.getElementById('toggle-stair-axes')?.addEventListener('change', e => {
         STATE.showStairAxes = e.target.checked;
         updateStairValidationAxes();

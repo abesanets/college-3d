@@ -12,6 +12,7 @@ const bldg3FloorGroups = {};
 const bldg4FloorGroups = {};
 let alignmentGuidesGroup;
 let stairValidationGroup;
+let territoryGroup;
 
 // Списки элементов для динамического обновления
 const wallMeshes = [];
@@ -77,6 +78,7 @@ const STATE = {
     showLabels: true,
     smartLabelOcclusion: true,
     showRoof: false,
+    showTerritory: false,
     showStairAxes: false,
     showGuides: true,
     showEdges: true,
