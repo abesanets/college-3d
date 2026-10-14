@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D План Колледжа — Корпуса 1, 2, 3 и 4</title>
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Three.js & OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <!-- Стили -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Верхняя левая шапка -->
+    <div class="fixed top-4 left-4 z-20 glass-panel rounded-xl px-4 py-3 flex items-center gap-3.5">
+        <div class="w-2.5 h-10 rounded-full bg-gradient-to-b from-sky-400 to-indigo-500 shadow-sm shadow-sky-500/30"></div>
+        <div>
+            <h1 class="text-sm font-bold tracking-wide text-slate-100 uppercase">3D Комплекс: Корпуса 1, 2, 3, 4</h1>
+            <p id="status-subtitle" class="text-xs text-slate-400">Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.) + Корпус 4 (1–3 эт.)</p>
+        </div>
+    </div>
+
+    <!-- Правая панель контроллеров -->
+    <div class="fixed top-4 right-4 z-20 glass-panel custom-scroll rounded-xl p-4 w-84 max-h-[94vh] overflow-y-auto flex flex-col gap-3 text-xs">
+        
+        <!-- Фильтр по корпусам -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Выбор корпуса</span>
+                <span class="text-[10px] text-sky-400/80 font-normal">Фильтр</span>
+            </div>
+            <div class="grid grid-cols-5 gap-1">
+                <button id="btn-bldg-both" class="bldg-btn btn-interactive active bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    Все
+                </button>
+                <button id="btn-bldg-1" class="bldg-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    К-1
+                </button>
+                <button id="btn-bldg-2" class="bldg-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    К-2
+                </button>
+                <button id="btn-bldg-3" class="bldg-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    К-3
+                </button>
+                <button id="btn-bldg-4" class="bldg-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    К-4
+                </button>
+            </div>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Выбор этажа -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                <span>Режим этажей</span>
+                <span class="text-[10px] text-emerald-400/80 font-normal">Smart Culling</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5 mb-1.5">
+                <button id="btn-mode-all" class="mode-btn btn-interactive active bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2.5 rounded-lg border border-slate-700 text-center">
+                    Все этажи (Стопка)
+                </button>
+                <button id="btn-mode-side" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2.5 rounded-lg border border-slate-700 text-center">
+                    Рядом (Сравнение)
+                </button>
+            </div>
+            <div class="grid grid-cols-7 gap-1">
+                <button id="btn-mode-7" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    7
+                </button>
+                <button id="btn-mode-6" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    6
+                </button>
+                <button id="btn-mode-5" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    5
+                </button>
+                <button id="btn-mode-4" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    4
+                </button>
+                <button id="btn-mode-3" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    3
+                </button>
+                <button id="btn-mode-2" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    2
+                </button>
+                <button id="btn-mode-1" class="mode-btn btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg border border-slate-700 text-center">
+                    1
+                </button>
+            </div>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Взрывной эффект (раздвижка этажей) -->
+        <div class="bg-slate-800/50 p-2.5 rounded-lg border border-slate-700/60 flex flex-col gap-2">
+            <button id="btn-explode" class="btn-interactive w-full py-2 px-3 rounded-lg font-semibold text-slate-100 bg-slate-700 hover:bg-slate-600 border border-slate-600 transition flex items-center justify-center gap-2 shadow-sm">
+                <span>💥 Взрывной эффект</span>
+            </button>
+
+            <div>
+                <div class="flex justify-between items-center mb-1 text-[11px]">
+                    <span class="text-slate-300 font-medium">Разнос по высоте</span>
+                    <span id="explode-val" class="text-slate-300 font-mono">0.0 м</span>
+                </div>
+                <input id="slider-explode" type="range" min="0" max="14" step="0.2" value="0" class="w-full cursor-pointer">
+            </div>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Ракурс камеры -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Быстрые ракурсы</div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button id="btn-view-3d" class="btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-2 rounded-lg border border-slate-700 text-center">
+                    3D Изометрия
+                </button>
+                <button id="btn-view-top" class="btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-2 rounded-lg border border-slate-700 text-center">
+                    Сверху (План)
+                </button>
+                <button id="btn-view-305" class="btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-2 rounded-lg border border-slate-700 text-center">
+                    Узел переходов
+                </button>
+                <button id="btn-view-side" class="btn-interactive bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-2 rounded-lg border border-slate-700 text-center">
+                    Фронтальный
+                </button>
+            </div>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Ползунки параметров -->
+        <div class="flex flex-col gap-2">
+            <div>
+                <div class="flex justify-between items-center mb-1 text-[11px]">
+                    <span class="text-slate-300 font-medium">Высота стен</span>
+                    <span id="wall-height-val" class="text-slate-400 font-mono">2.40 м</span>
+                </div>
+                <input id="slider-wall-height" type="range" min="1.0" max="4.5" step="0.1" value="2.4" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-1 text-[11px]">
+                    <span class="text-slate-300 font-medium">Непрозрачность плит</span>
+                    <span id="slab-opacity-val" class="text-slate-400 font-mono">100%</span>
+                </div>
+                <input id="slider-slab-opacity" type="range" min="0.25" max="1.0" step="0.05" value="1.0" class="w-full cursor-pointer">
+            </div>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Переключатели элементов -->
+        <div class="flex flex-col gap-1.5">
+            <label class="flex items-center justify-between cursor-pointer py-0.5">
+                <span class="text-slate-300">Двери и проходы</span>
+                <input id="toggle-doors" type="checkbox" checked class="w-4 h-4 cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer py-0.5">
+                <span class="text-slate-300">Номера кабинетов</span>
+                <input id="toggle-labels" type="checkbox" checked class="w-4 h-4 cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer py-0.5">
+                <span class="text-slate-200 font-medium">Скрытие закрытых плашек</span>
+                <input id="toggle-smart-occlusion" type="checkbox" checked class="w-4 h-4 cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer py-0.5">
+                <span class="text-emerald-300 font-medium">Оси совпадения лестниц</span>
+                <input id="toggle-stair-axes" type="checkbox" checked class="w-4 h-4 cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer py-0.5">
+                <span class="text-slate-300">Линии вертикали этажей</span>
+                <input id="toggle-guides" type="checkbox" checked class="w-4 h-4 cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer py-0.5">
+                <span class="text-slate-300">Контуры чертежа (Edges)</span>
+                <input id="toggle-edges" type="checkbox" checked class="w-4 h-4 cursor-pointer">
+            </label>
+        </div>
+
+        <hr class="panel-divider">
+
+        <!-- Легенда -->
+        <div class="flex flex-col gap-1.5 text-[10px] text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-sm bg-[#eceff3] border border-slate-500 inline-block"></span>
+                <span>Стены и несущие перегородки</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-sm bg-[#8c96a6] border border-slate-600 inline-block"></span>
+                <span>Дверные блоки</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-sm bg-[#cbd2dc] border border-slate-600 inline-block"></span>
+                <span>Лифты и лестничные клетки</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Информационная подсказка по управлению внизу экрана -->
+    <div class="fixed bottom-4 left-4 z-20 glass-panel rounded-lg px-4 py-2.5 text-xs text-slate-400 flex flex-wrap items-center gap-4">
+        <span><strong class="text-slate-100">ЛКМ:</strong> Вращение</span>
+        <span><strong class="text-slate-100">ПКМ / Shift+ЛКМ:</strong> Панорама</span>
+        <span><strong class="text-sky-400 font-semibold">Колёсико:</strong> Зум к курсору</span>
+    </div>
+
+    <!-- Подключение JS модулей -->
+    <script src="js/state.js"></script>
+    <script src="js/materials.js"></script>
+    <script src="js/helpers.js"></script>
+    <script src="js/buildings/building1.js"></script>
+    <script src="js/buildings/building2.js"></script>
+    <script src="js/buildings/building3.js"></script>
+    <script src="js/buildings/building4.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

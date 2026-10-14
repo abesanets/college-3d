@@ -1,0 +1,141 @@
+/* ==========================================
+   СТИЛИ ИНТЕРФЕЙСА 3D-МОДЕЛИ КОЛЛЕДЖА
+   ========================================== */
+
+:root {
+    --bg-dark: #12151a;
+    --panel-bg: rgba(20, 24, 32, 0.82);
+    --panel-border: rgba(255, 255, 255, 0.08);
+    --panel-border-hover: rgba(255, 255, 255, 0.16);
+    --accent-blue: #38bdf8;
+    --accent-emerald: #10b981;
+    --accent-active: #475569;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: var(--bg-dark);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #e2e8f0;
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+#canvas-container {
+    width: 100vw;
+    height: 100vh;
+    display: block;
+    cursor: grab;
+}
+
+#canvas-container:active {
+    cursor: grabbing;
+}
+
+/* Glassmorphism панели */
+.glass-panel {
+    background: var(--panel-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--panel-border);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.glass-panel:hover {
+    border-color: var(--panel-border-hover);
+}
+
+/* Стилизация скроллбара панели */
+.custom-scroll::-webkit-scrollbar {
+    width: 5px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: rgba(100, 116, 139, 0.5);
+    border-radius: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.8);
+}
+
+/* Кнопки */
+.btn-interactive {
+    position: relative;
+    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+    outline: none;
+}
+
+.btn-interactive:hover {
+    transform: translateY(-1px);
+}
+
+.btn-interactive:active {
+    transform: translateY(0);
+}
+
+.mode-btn.active, .bldg-btn.active {
+    background: linear-gradient(135deg, #475569 0%, #334155 100%) !important;
+    color: #ffffff !important;
+    border-color: #94a3b8 !important;
+    box-shadow: 0 0 12px rgba(148, 163, 184, 0.3) !important;
+    font-weight: 600;
+}
+
+.explode-btn-active {
+    background: linear-gradient(135deg, #e11d48 0%, #be123c 100%) !important;
+    border-color: #fda4af !important;
+    box-shadow: 0 0 18px rgba(225, 29, 72, 0.45) !important;
+    color: #ffffff !important;
+}
+
+/* Ползунки Range */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: #334155;
+    border-radius: 999px;
+    outline: none;
+    transition: background 0.2s;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #e2e8f0;
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+    cursor: pointer;
+    transition: transform 0.1s ease, background-color 0.15s;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    background: #ffffff;
+}
+
+/* Чекбоксы */
+input[type="checkbox"] {
+    accent-color: #38bdf8;
+}
+
+/* Разделители */
+.panel-divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(100, 116, 139, 0.35), transparent);
+    margin: 4px 0;
+}

@@ -1,0 +1,3399 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D План — Корпуса 1 (1–7 эт.), 2 (1–3 эт.), 3 (1–2 эт.) и 4 (1–3 эт.)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Подключение Three.js и OrbitControls -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #16191e;
+            font-family: 'Inter', sans-serif;
+            color: #e2e8f0;
+            user-select: none;
+        }
+        #canvas-container {
+            width: 100vw;
+            height: 100vh;
+            display: block;
+        }
+        .glass-panel {
+            background: rgba(24, 28, 35, 0.88);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
+        }
+        input[type="range"] {
+            accent-color: #94a3b8;
+        }
+        .mode-btn.active, .bldg-btn.active {
+            background-color: #475569;
+            color: #ffffff;
+            border-color: #94a3b8;
+            box-shadow: 0 0 10px rgba(148, 163, 184, 0.25);
+        }
+        .explode-btn-active {
+            background: linear-gradient(135deg, #475569 0%, #334155 100%);
+            border-color: #cbd5e1 !important;
+            box-shadow: 0 0 15px rgba(148, 163, 184, 0.35);
+        }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container"></div>
+
+    <!-- Верхняя левая шапка -->
+    <div class="fixed top-4 left-4 z-20 glass-panel rounded-xl px-4 py-3 flex items-center gap-3.5">
+        <div class="w-3 h-9 rounded-full bg-slate-400"></div>
+        <div>
+            <h1 class="text-sm font-bold tracking-wide text-slate-100 uppercase">Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.) + Корпус 4 (1–3 эт.)</h1>
+            <p id="status-subtitle" class="text-xs text-slate-400">Единая 3D-модель комплекса: все 4 корпуса и надземные переходы 2-го этажа</p>
+        </div>
+    </div>
+
+    <!-- Правая панель контроллеров -->
+    <div class="fixed top-4 right-4 z-20 glass-panel rounded-xl p-4 w-84 max-h-[93vh] overflow-y-auto flex flex-col gap-3 text-xs">
+        
+        <!-- Фильтр по корпусам -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Выбор корпуса</div>
+            <div class="grid grid-cols-5 gap-1">
+                <button id="btn-bldg-both" class="bldg-btn active bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Все
+                </button>
+                <button id="btn-bldg-1" class="bldg-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Корп. 1
+                </button>
+                <button id="btn-bldg-2" class="bldg-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Корп. 2
+                </button>
+                <button id="btn-bldg-3" class="bldg-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Корп. 3
+                </button>
+                <button id="btn-bldg-4" class="bldg-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Корп. 4
+                </button>
+            </div>
+        </div>
+
+        <hr class="border-slate-700/70">
+
+        <!-- Выбор этажа -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-1.5">Режим отображения этажей</div>
+            <div class="grid grid-cols-2 gap-1.5 mb-1.5">
+                <button id="btn-mode-all" class="mode-btn active bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2.5 rounded-lg transition border border-slate-700">
+                    Все этажи (Стопка)
+                </button>
+                <button id="btn-mode-side" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2.5 rounded-lg transition border border-slate-700">
+                    Рядом (Сравнение)
+                </button>
+            </div>
+            <div class="grid grid-cols-7 gap-1">
+                <button id="btn-mode-7" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 7
+                </button>
+                <button id="btn-mode-6" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 6
+                </button>
+                <button id="btn-mode-5" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 5
+                </button>
+                <button id="btn-mode-4" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 4
+                </button>
+                <button id="btn-mode-3" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 3
+                </button>
+                <button id="btn-mode-2" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 2
+                </button>
+                <button id="btn-mode-1" class="mode-btn bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-1 rounded-lg transition border border-slate-700 text-center">
+                    Эт. 1
+                </button>
+            </div>
+        </div>
+
+        <hr class="border-slate-700/70">
+
+        <!-- ЕДИНСТВЕННЫЙ блок Взрывного эффекта (Exploded View) -->
+        <div class="bg-slate-800/60 p-3 rounded-lg border border-slate-700/80 flex flex-col gap-2.5">
+            <button id="btn-explode" class="w-full py-2.5 px-3 rounded-lg font-semibold text-slate-100 bg-slate-700 hover:bg-slate-600 border border-slate-500/50 transition flex items-center justify-center gap-2 shadow-sm">
+                <span>💥 Взрывной эффект</span>
+            </button>
+
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-slate-300 font-medium">Разнос этажей по высоте</span>
+                    <span id="explode-val" class="text-slate-300 font-mono">0.0 м</span>
+                </div>
+                <input id="slider-explode" type="range" min="0" max="14" step="0.2" value="0" class="w-full cursor-pointer">
+            </div>
+        </div>
+
+        <hr class="border-slate-700/70">
+
+        <!-- Ракурс камеры -->
+        <div>
+            <div class="text-slate-400 font-semibold uppercase tracking-wider mb-2">Ракурс камеры</div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button id="btn-view-3d" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2 rounded-lg transition border border-slate-700 text-center">
+                    Общий вид 3D
+                </button>
+                <button id="btn-view-top" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2 rounded-lg transition border border-slate-700 text-center">
+                    Сверху (План 1 в 1)
+                </button>
+                <button id="btn-view-305" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2 rounded-lg transition border border-slate-700 text-center">
+                    Переходы К2 ↔ К4 ↔ К3
+                </button>
+                <button id="btn-view-side" class="bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium py-2 px-2 rounded-lg transition border border-slate-700 text-center">
+                    Фронтальный вид
+                </button>
+            </div>
+        </div>
+
+        <hr class="border-slate-700/70">
+
+        <!-- Ползунки высоты стен и прозрачности -->
+        <div class="flex flex-col gap-2.5">
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-slate-300 font-medium">Высота стен (2x)</span>
+                    <span id="wall-height-val" class="text-slate-400 font-mono">2.40 м</span>
+                </div>
+                <input id="slider-wall-height" type="range" min="1.0" max="4.5" step="0.1" value="2.4" class="w-full cursor-pointer">
+            </div>
+
+            <div>
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-slate-300 font-medium">Непрозрачность перекрытий</span>
+                    <span id="slab-opacity-val" class="text-slate-400 font-mono">100%</span>
+                </div>
+                <input id="slider-slab-opacity" type="range" min="0.25" max="1.0" step="0.05" value="1.0" class="w-full cursor-pointer">
+            </div>
+        </div>
+
+        <hr class="border-slate-700/70">
+
+        <!-- Переключатели -->
+        <div class="flex flex-col gap-2">
+            <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-slate-300">Показать двери (тонкие стенки)</span>
+                <input id="toggle-doors" type="checkbox" checked class="w-4 h-4 accent-slate-400 rounded cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-slate-300">Номера кабинетов</span>
+                <input id="toggle-labels" type="checkbox" checked class="w-4 h-4 accent-slate-400 rounded cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-slate-200 font-medium">Умное скрытие перекрытых плашек</span>
+                <input id="toggle-smart-occlusion" type="checkbox" checked class="w-4 h-4 accent-slate-400 rounded cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-emerald-300 font-medium">Оси совпадения лестниц (валидация)</span>
+                <input id="toggle-stair-axes" type="checkbox" checked class="w-4 h-4 accent-emerald-400 rounded cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-slate-300">Линии проекции между этажами</span>
+                <input id="toggle-guides" type="checkbox" checked class="w-4 h-4 accent-slate-400 rounded cursor-pointer">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+                <span class="text-slate-300">Контуры стен (Чертёж)</span>
+                <input id="toggle-edges" type="checkbox" checked class="w-4 h-4 accent-slate-400 rounded cursor-pointer">
+            </label>
+        </div>
+
+        <hr class="border-slate-700/70">
+
+        <!-- Легенда -->
+        <div class="flex flex-col gap-1.5 text-[11px] text-slate-400">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-[#eceff3] border border-slate-500 inline-block"></span>
+                <span>Капитальные стены и перегородки</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-[#8c96a6] border border-slate-600 inline-block"></span>
+                <span>Тонкие стенки на месте дверей</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-sm bg-[#cbd2dc] border border-slate-600 inline-block"></span>
+                <span>Лифтовой холл, С/У и лестницы ЛК№1, ЛК№2</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Подсказка управления внизу -->
+    <div class="fixed bottom-4 left-4 z-20 glass-panel rounded-lg px-3.5 py-2 text-xs text-slate-400 flex flex-wrap items-center gap-4">
+        <span><strong class="text-slate-200">ЛКМ:</strong> Вращение</span>
+        <span><strong class="text-slate-200">ПКМ / Shift+ЛКМ:</strong> Панорама</span>
+        <span><strong class="text-slate-200">Колесо:</strong> Масштаб</span>
+    </div>
+
+    <script>
+        let scene, camera, renderer, controls;
+
+        // Группы для всех 7 этажей (внутри каждой лежат подгруппы Корпуса 1, Корпуса 2, Корпуса 3 и Корпуса 4)
+        const floorGroups = {};
+        const bldg1FloorGroups = {};
+        const bldg2FloorGroups = {};
+        const bldg3FloorGroups = {};
+        const bldg4FloorGroups = {};
+        let alignmentGuidesGroup;
+        let stairValidationGroup;
+
+        // Списки элементов для динамического обновления
+        const wallMeshes = [];
+        const wallEdges = [];
+        const doorMeshes = [];
+        const doorEdges = [];
+        const slabMeshes = [];
+        const stairMeshes = [];
+        const labelSprites = [];
+        const guideLines = [];
+
+        const BASE_WALL_HEIGHT = 2.4;
+        const BASE_FLOOR_STEP = 2.65;
+
+        // Габариты Корпуса 2
+        const B2_X_START = 20.4;
+        const B2_X_END = 68.0;
+        const B2_Z_TOP = -13.8;
+        const B2_Z_CORR_TOP = -7.2;
+        const B2_Z_CORR_BOT = -4.4;
+        const B2_Z_BOT = 3.5;
+
+        // Единые сквозные координаты лестничных клеток Корпуса 2 (совпадают 100% на 1, 2 и 3 этажах):
+        const B2_LK2_X1 = 41.8, B2_LK2_X2 = 45.4;
+        const B2_LK1_X1 = 64.2, B2_LK1_X2 = 68.0;
+        const B2_LK3_X1 = 20.4, B2_LK3_X2 = 24.8, B2_LK3_Z_BOT = -10.5;
+
+        // Габариты Корпуса 3 (примыкает ВПЛОТНУЮ без перемычки к северной стене Корпуса 1 на Z = -14.0, двери стыка 2 эт.: X [4.9..6.9])
+        // Западный ряд (X [-1.6..4.6]): 201, 201А, ЛК №1, 205, 205А, ЛК №2, 207, 209, 209А (на 1 эт.: 103, ЛК №2, 106, 107, 108/109, С/У, ЛК №1, 114, 114А, 117)
+        // Восточный ряд (X [7.2..14.0]): 202, 202А, 204, 206, 208, 208А, эркер с лестницей, 210, 212А, 212 (на 1 эт.: 103, 104, 102, 105, 111, 111А, 112, 113А, 113, 116)
+        const B3_X_WEST = -1.6;
+        const B3_X_CORR_W = 4.6;
+        const B3_X_CORR_E = 7.2;
+        const B3_X_EAST = 14.0;
+        const B3_Z_SOUTH = -14.0;
+        const B3_Z_NORTH = -61.6;
+
+        // Единые сквозные координаты лестничных клеток Корпуса 3 на западной стороне X = [-1.6..4.6] (совпадают 100% на 1 и 2 этажах):
+        // Южная лестничная шахта (ЛК №2 на 1 эт. / ЛК №1 на 2 эт.): X = [-1.6..4.6], Z = [-30.4..-26.8]
+        // Северная лестничная шахта (ЛК №1 на 1 эт. / ЛК №2 на 2 эт.): X = [-1.6..4.6], Z = [-47.8..-44.2]
+        const B3_SHAFT_SOUTH_Z1 = -30.4, B3_SHAFT_SOUTH_Z2 = -26.8;
+        const B3_SHAFT_NORTH_Z1 = -47.8, B3_SHAFT_NORTH_Z2 = -44.2;
+
+        // Габариты Корпуса 4 (сдвинут вверх по X на +6.8 м, чтобы переход К3↔К4 удлинился, а переход К4↔К2 X=[36.2..38.8] попадал точно МЕЖДУ углом каб. 201 и ЛК №1!):
+        const B4_X_WEST = 32.4;
+        const B4_X_EAST = 66.0;
+        const B4_Z_NORTH = -61.6;
+        const B4_Z_MID_N = -49.8;
+        const B4_Z_MID_S = -45.4;
+        const B4_Z_SOUTH = -27.4;
+
+        // Сквозные шахты лестниц Корпуса 4 (совпадают 100% на 1, 2 и 3 этажах):
+        // - ЛК №2 (нижняя левая, вплотную к удлинённому Переходу К3↔К4): X = [27.8..32.4], Z = [-49.8..-46.8]
+        // - ЛК №3 (верхняя дальняя, строго в створе центральной ленты между залом 206 и коридором!): X = [61.4..69.0], Z = [-49.8..-45.4]
+        // - ЛК №1 (справа: расположена ВЫШЕ перехода К4↔К2 X=[36.2..38.8], так что переход входит ровно между 201 X=[32.4..36.2] и ЛК №1 X=[38.8..42.4]!):
+        const B4_LK2_X1 = 27.8, B4_LK2_X2 = 32.4, B4_LK2_Z1 = -49.8, B4_LK2_Z2 = -46.8;
+        const B4_LK3_X1 = 61.4, B4_LK3_X2 = 69.0, B4_LK3_Z1 = -49.8, B4_LK3_Z2 = -45.4;
+        const B4_LK1_X1 = 38.8, B4_LK1_X2 = 42.4, B4_LK1_Z1 = -31.2, B4_LK1_Z2 = -24.4;
+
+        const STATE = {
+            buildingFilter: 'both',    // 'both' | '1' | '2' | '3' | '4'
+            mode: 'all',               // 'all' | '7' | '6' | '5' | '4' | '3' | '2' | '1' | 'sideBySide'
+            exploded: false,
+            explodeGap: 0.0,
+            wallHeight: BASE_WALL_HEIGHT,
+            slabOpacity: 1.0,
+            showDoors: true,
+            showLabels: true,
+            smartLabelOcclusion: true,
+            showStairAxes: true,
+            showGuides: true,
+            showEdges: true,
+            targetPos: {
+                1: new THREE.Vector3(0, 0, 0),
+                2: new THREE.Vector3(0, BASE_FLOOR_STEP * 1, 0),
+                3: new THREE.Vector3(0, BASE_FLOOR_STEP * 2, 0),
+                4: new THREE.Vector3(0, BASE_FLOOR_STEP * 3, 0),
+                5: new THREE.Vector3(0, BASE_FLOOR_STEP * 4, 0),
+                6: new THREE.Vector3(0, BASE_FLOOR_STEP * 5, 0),
+                7: new THREE.Vector3(0, BASE_FLOOR_STEP * 6, 0)
+            },
+            targetCamPos: null,
+            targetControlsCenter: null
+        };
+
+        const MATERIALS = {
+            slab: new THREE.MeshStandardMaterial({
+                color: 0xd8dce2,
+                roughness: 0.85,
+                metalness: 0.05,
+                transparent: false,
+                opacity: 1.0
+            }),
+            coreSlab: new THREE.MeshStandardMaterial({
+                color: 0xcbd2dc,
+                roughness: 0.85,
+                metalness: 0.05,
+                transparent: false,
+                opacity: 1.0,
+                polygonOffset: true,
+                polygonOffsetFactor: -1,
+                polygonOffsetUnits: -1
+            }),
+            wall: new THREE.MeshStandardMaterial({
+                color: 0xeceff3,
+                roughness: 0.6,
+                metalness: 0.05
+            }),
+            doorThin: new THREE.MeshStandardMaterial({
+                color: 0x8c96a6,
+                roughness: 0.5,
+                metalness: 0.1
+            }),
+            stair: new THREE.MeshStandardMaterial({
+                color: 0xbac2cc,
+                roughness: 0.7,
+                metalness: 0.08
+            }),
+            elevatorCar: new THREE.MeshStandardMaterial({
+                color: 0xb0b8c4,
+                roughness: 0.75
+            }),
+            edgeMain: new THREE.LineBasicMaterial({ color: 0x5c6470, linewidth: 1 }),
+            edgeDoor: new THREE.LineBasicMaterial({ color: 0x64748b, linewidth: 1 }),
+            guideLine: new THREE.LineDashedMaterial({
+                color: 0x94a3b8,
+                dashSize: 0.45,
+                gapSize: 0.3,
+                transparent: true,
+                opacity: 0.6
+            }),
+            stairAxisLine: new THREE.LineDashedMaterial({
+                color: 0x10b981,
+                dashSize: 0.5,
+                gapSize: 0.25,
+                transparent: true,
+                opacity: 0.9
+            }),
+            stairBoxEdge: new THREE.LineBasicMaterial({
+                color: 0x34d399,
+                transparent: true,
+                opacity: 0.65
+            })
+        };
+
+        function init() {
+            const container = document.getElementById('canvas-container');
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x16191e);
+
+            camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.2, 700);
+            camera.position.set(16, 68, 56);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.08;
+            controls.maxPolarAngle = Math.PI / 2 - 0.01;
+            controls.minDistance = 5;
+            controls.maxDistance = 420;
+            controls.target.set(16, 7.5, -14);
+
+            // Освещение
+            const ambientLight = new THREE.AmbientLight(0xdbe2ea, 0.76);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.58);
+            dirLight1.position.set(35, 95, 45);
+            dirLight1.castShadow = true;
+            dirLight1.shadow.mapSize.width = 2048;
+            dirLight1.shadow.mapSize.height = 2048;
+            dirLight1.shadow.camera.near = 5;
+            dirLight1.shadow.camera.far = 280;
+            const d = 85;
+            dirLight1.shadow.camera.left = -d;
+            dirLight1.shadow.camera.right = d;
+            dirLight1.shadow.camera.top = d;
+            dirLight1.shadow.camera.bottom = -d;
+            dirLight1.shadow.bias = -0.0005;
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x94a3b8, 0.32);
+            dirLight2.position.set(-35, 55, -45);
+            scene.add(dirLight2);
+
+            // Чертёжная сетка в основании
+            const grid = new THREE.GridHelper(320, 320, 0x2e3540, 0x20252d);
+            grid.position.set(15, -0.18, -18);
+            scene.add(grid);
+
+            // Создаём группы для 1–7 этажей и подгруппы Корпусов 1, 2, 3 и 4
+            for (let f = 1; f <= 7; f++) {
+                floorGroups[f] = new THREE.Group();
+                bldg1FloorGroups[f] = new THREE.Group();
+                bldg2FloorGroups[f] = new THREE.Group();
+                bldg3FloorGroups[f] = new THREE.Group();
+                bldg4FloorGroups[f] = new THREE.Group();
+                floorGroups[f].add(bldg1FloorGroups[f]);
+                floorGroups[f].add(bldg2FloorGroups[f]);
+                floorGroups[f].add(bldg3FloorGroups[f]);
+                floorGroups[f].add(bldg4FloorGroups[f]);
+                scene.add(floorGroups[f]);
+            }
+            alignmentGuidesGroup = new THREE.Group();
+            scene.add(alignmentGuidesGroup);
+
+            stairValidationGroup = new THREE.Group();
+            scene.add(stairValidationGroup);
+
+            // Сборка Корпуса 1 (Этажи 1–7)
+            buildFloor1(bldg1FloorGroups[1]);
+            buildFloor2(bldg1FloorGroups[2]);
+            buildFloor3(bldg1FloorGroups[3]);
+            buildFloor4(bldg1FloorGroups[4]);
+            buildFloor5(bldg1FloorGroups[5]);
+            buildFloor6(bldg1FloorGroups[6]);
+            buildFloor7(bldg1FloorGroups[7]);
+
+            // Сборка Корпуса 2 (Этажи 1–3), пристроенного справа от перехода
+            buildBuilding2Floor1(bldg2FloorGroups[1]);
+            buildBuilding2Floor2(bldg2FloorGroups[2]);
+            buildBuilding2Floor3(bldg2FloorGroups[3]);
+
+            // Сборка Корпуса 3 (Этажи 1–2), пристроенного к северу от Корпуса 1 (со стыковкой на 2-м этаже)
+            buildBuilding3Floor1(bldg3FloorGroups[1]);
+            buildBuilding3Floor2(bldg3FloorGroups[2]);
+
+            // Сборка Корпуса 4 (Этажи 1–3) и переходов 2-го этажа к Корпусу 3 и Корпусу 2
+            buildBuilding4Floor1(bldg4FloorGroups[1]);
+            buildBuilding4Floor2(bldg4FloorGroups[2]);
+            buildBuilding4Floor3(bldg4FloorGroups[3]);
+
+            buildAlignmentGuides();
+            buildStairValidationAxes();
+
+            recalcTargetPositions();
+            for (let f = 1; f <= 7; f++) {
+                floorGroups[f].position.copy(STATE.targetPos[f]);
+            }
+
+            updateLabelsVisibility();
+            updateAlignmentGuides();
+            updateStairValidationAxes();
+            setupUI();
+
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function addFloorRect(targetGroup, x1, z1, x2, z2, isCore = false) {
+            const w = Math.abs(x2 - x1);
+            const d = Math.abs(z2 - z1);
+            const cx = (x1 + x2) / 2;
+            const cz = (z1 + z2) / 2;
+
+            const thickness = 0.16;
+            const geom = new THREE.BoxGeometry(w, thickness, d);
+            const mat = isCore ? MATERIALS.coreSlab : MATERIALS.slab;
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.position.set(cx, -thickness / 2 + (isCore ? 0.008 : 0), cz);
+            mesh.receiveShadow = true;
+            targetGroup.add(mesh);
+            slabMeshes.push(mesh);
+
+            const edges = new THREE.EdgesGeometry(geom);
+            const line = new THREE.LineSegments(edges, MATERIALS.edgeMain);
+            mesh.add(line);
+        }
+
+        function addWallLine(targetGroup, x1, z1, x2, z2, openings = [], wallThickness = 0.18) {
+            const isHorizontal = Math.abs(z2 - z1) < 0.001;
+            const startCoord = isHorizontal ? Math.min(x1, x2) : Math.min(z1, z2);
+            const endCoord = isHorizontal ? Math.max(x1, x2) : Math.max(z1, z2);
+            const fixedCoord = isHorizontal ? z1 : x1;
+            const angle = isHorizontal ? 0 : Math.PI / 2;
+
+            const sorted = [...openings].sort((a, b) => a.from - b.from);
+            let cursor = startCoord;
+
+            for (const op of sorted) {
+                const oStart = Math.max(startCoord, op.from);
+                const oEnd = Math.min(endCoord, op.to);
+
+                if (oStart > cursor + 0.02) {
+                    createWallSegment(targetGroup, cursor, oStart, fixedCoord, isHorizontal, angle, wallThickness, false);
+                }
+
+                if (op.type !== 'open') {
+                    createWallSegment(targetGroup, oStart, oEnd, fixedCoord, isHorizontal, angle, 0.09, true);
+                }
+
+                cursor = oEnd;
+            }
+
+            if (cursor < endCoord - 0.02) {
+                createWallSegment(targetGroup, cursor, endCoord, fixedCoord, isHorizontal, angle, wallThickness, false);
+            }
+        }
+
+        function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, isDoor = false) {
+            const dx = x2 - x1;
+            const dz = z2 - z1;
+            const len = Math.hypot(dx, dz);
+            if (len <= 0.01) return;
+
+            const cx = (x1 + x2) / 2;
+            const cz = (z1 + z2) / 2;
+            const angle = Math.atan2(dz, dx);
+
+            const geom = new THREE.BoxGeometry(len, 1, thickness);
+            const mat = isDoor ? MATERIALS.doorThin : MATERIALS.wall;
+            const mesh = new THREE.Mesh(geom, mat);
+
+            const h = STATE.wallHeight;
+            mesh.scale.y = h;
+            mesh.position.set(cx, h / 2, cz);
+            mesh.rotation.y = -angle;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            targetGroup.add(mesh);
+
+            const edgeGeom = new THREE.EdgesGeometry(geom);
+            const edgeLine = new THREE.LineSegments(edgeGeom, isDoor ? MATERIALS.edgeDoor : MATERIALS.edgeMain);
+            mesh.add(edgeLine);
+
+            if (isDoor) {
+                doorMeshes.push(mesh);
+                doorEdges.push(edgeLine);
+            } else {
+                wallMeshes.push(mesh);
+                wallEdges.push(edgeLine);
+            }
+        }
+
+        function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle, thickness, isDoor) {
+            const len = Math.abs(c2 - c1);
+            if (len <= 0.01) return;
+
+            const mid = (c1 + c2) / 2;
+            const cx = isHorizontal ? mid : fixedCoord;
+            const cz = isHorizontal ? fixedCoord : mid;
+
+            const geom = new THREE.BoxGeometry(len, 1, thickness);
+            const mat = isDoor ? MATERIALS.doorThin : MATERIALS.wall;
+            const mesh = new THREE.Mesh(geom, mat);
+
+            const h = STATE.wallHeight;
+            mesh.scale.y = h;
+            mesh.position.set(cx, h / 2, cz);
+            mesh.rotation.y = -angle;
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            targetGroup.add(mesh);
+
+            const edgeGeom = new THREE.EdgesGeometry(geom);
+            const edgeLine = new THREE.LineSegments(edgeGeom, isDoor ? MATERIALS.edgeDoor : MATERIALS.edgeMain);
+            mesh.add(edgeLine);
+
+            if (isDoor) {
+                doorMeshes.push(mesh);
+                doorEdges.push(edgeLine);
+            } else {
+                wallMeshes.push(mesh);
+                wallEdges.push(edgeLine);
+            }
+        }
+
+        function addSquareColumn(targetGroup, cx, cz, size = 0.28) {
+            const geom = new THREE.BoxGeometry(size, 1, size);
+            const mesh = new THREE.Mesh(geom, MATERIALS.wall);
+            const h = STATE.wallHeight;
+            mesh.scale.y = h;
+            mesh.position.set(cx, h / 2, cz);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            targetGroup.add(mesh);
+
+            const edgeGeom = new THREE.EdgesGeometry(geom);
+            const edgeLine = new THREE.LineSegments(edgeGeom, MATERIALS.edgeMain);
+            mesh.add(edgeLine);
+
+            wallMeshes.push(mesh);
+            wallEdges.push(edgeLine);
+        }
+
+        function addRoomLabel3D(targetGroup, floorNum, text, x, z, isSmall = false, isWide = false, buildingNum = 1, customScale = 1.0) {
+            const canvas = document.createElement('canvas');
+            const lines = text.split('\n');
+            const isMultiLine = lines.length > 1;
+            const width = isWide ? 420 : (isSmall ? 180 : 240);
+            const height = isMultiLine ? 148 : (isSmall ? 88 : 108);
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+
+            const r = 20;
+            ctx.fillStyle = buildingNum === 4
+                ? 'rgba(254, 248, 238, 0.98)'
+                : (buildingNum === 3
+                    ? 'rgba(238, 250, 244, 0.98)'
+                    : (buildingNum === 2 ? 'rgba(240, 246, 255, 0.98)' : 'rgba(245, 248, 252, 0.98)'));
+            ctx.strokeStyle = buildingNum === 4
+                ? '#855836'
+                : (buildingNum === 3
+                    ? '#3b6e5c'
+                    : (buildingNum === 2 ? '#475569' : '#334155'));
+            ctx.lineWidth = 7;
+
+            ctx.beginPath();
+            ctx.moveTo(r, 5);
+            ctx.lineTo(width - r, 5);
+            ctx.quadraticCurveTo(width - 5, 5, width - 5, r);
+            ctx.lineTo(width - 5, height - r);
+            ctx.quadraticCurveTo(width - 5, height - 5, width - r, height - 5);
+            ctx.lineTo(r, height - 5);
+            ctx.quadraticCurveTo(5, height - 5, 5, height - r);
+            ctx.lineTo(5, r);
+            ctx.quadraticCurveTo(5, 5, r, 5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#0f172a';
+            const fontSize = isMultiLine ? 32 : (isWide ? 36 : (isSmall ? 40 : 50));
+            ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            if (isMultiLine) {
+                const lineHeight = fontSize * 1.18;
+                const startY = height / 2 - ((lines.length - 1) * lineHeight) / 2;
+                lines.forEach((line, idx) => {
+                    ctx.fillText(line, width / 2, startY + idx * lineHeight);
+                });
+            } else {
+                ctx.fillText(text, width / 2, height / 2 + 2);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.anisotropy = 4;
+            texture.minFilter = THREE.LinearFilter;
+            texture.magFilter = THREE.LinearFilter;
+            texture.needsUpdate = true;
+
+            const baseW = isWide ? 3.0 : (isSmall ? 1.15 : 1.65);
+            const planeW = baseW * customScale;
+            const planeH = planeW * (height / width);
+            const geom = new THREE.PlaneGeometry(planeW, planeH);
+
+            const mat = new THREE.MeshBasicMaterial({
+                map: texture,
+                transparent: true,
+                depthTest: false,
+                depthWrite: false,
+                side: THREE.DoubleSide
+            });
+
+            const mesh = new THREE.Mesh(geom, mat);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.position.set(x, STATE.wallHeight * 0.65, z);
+            mesh.renderOrder = 999;
+            targetGroup.add(mesh);
+
+            labelSprites.push({
+                mesh,
+                floor: floorNum,
+                building: buildingNum,
+                localX: x,
+                localZ: z
+            });
+        }
+
+        // Обязательный алиас согласно правилам пайплайна
+        const addRoomLabel = addRoomLabel3D;
+
+        function buildElevatorShaftCross(targetGroup, x1, z1, x2, z2) {
+            const w = Math.abs(x2 - x1);
+            const d = Math.abs(z2 - z1);
+            const cx = (x1 + x2) / 2;
+            const cz = (z1 + z2) / 2;
+
+            const geom = new THREE.BoxGeometry(w, 0.08, d);
+            const mesh = new THREE.Mesh(geom, MATERIALS.elevatorCar);
+            mesh.position.set(cx, 0.04, cz);
+            targetGroup.add(mesh);
+
+            const edges = new THREE.EdgesGeometry(geom);
+            mesh.add(new THREE.LineSegments(edges, MATERIALS.edgeMain));
+
+            const pts = [
+                new THREE.Vector3(x1, 0.09, z1),
+                new THREE.Vector3(x2, 0.09, z2),
+                new THREE.Vector3(x2, 0.09, z1),
+                new THREE.Vector3(x1, 0.09, z2)
+            ];
+            const crossGeom = new THREE.BufferGeometry().setFromPoints(pts);
+            targetGroup.add(new THREE.LineSegments(crossGeom, MATERIALS.edgeMain));
+        }
+
+        function registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, yOffset = 0) {
+            const mesh = new THREE.Mesh(geom, MATERIALS.stair);
+            const stepH = Math.max(0.06, STATE.wallHeight * heightRatio);
+            mesh.scale.y = stepH;
+            mesh.position.set(sx, (stepH / 2) + yOffset, cz);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+
+            const edges = new THREE.EdgesGeometry(geom);
+            mesh.add(new THREE.LineSegments(edges, MATERIALS.edgeMain));
+            targetGroup.add(mesh);
+
+            stairMeshes.push({ mesh, heightRatio, yOffset });
+        }
+
+        function buildStaircaseUnit(targetGroup, zTop, zBottom, zMid, isUpperStaircase) {
+            addWallLine(targetGroup, 10.6, zMid, 13.8, zMid, [], 0.08);
+
+            const stepsCount = 9;
+            const startX = 10.6;
+            const endX = 13.8;
+            const stepDepth = (endX - startX) / stepsCount;
+
+            const flights = [
+                { z1: zTop + 0.12, z2: zMid - 0.06, dir: isUpperStaircase ? 1 : -1 },
+                { z1: zMid + 0.06, z2: zBottom - 0.12, dir: isUpperStaircase ? -1 : 1 }
+            ];
+
+            flights.forEach(fl => {
+                const flightW = Math.abs(fl.z2 - fl.z1);
+                const cz = (fl.z1 + fl.z2) / 2;
+
+                for (let i = 0; i < stepsCount; i++) {
+                    const ratio = fl.dir === 1 ? (i + 1) / stepsCount : (stepsCount - i) / stepsCount;
+                    const heightRatio = ratio * 0.52;
+                    const sx = startX + (i + 0.5) * stepDepth;
+
+                    const geom = new THREE.BoxGeometry(stepDepth * 0.96, 1, flightW);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, 0);
+                }
+            });
+        }
+
+        function buildCorridorStepsRight(targetGroup) {
+            const stepW = 0.28;
+            const z1 = -6.1;
+            const z2 = -3.6;
+            const depthZ = Math.abs(z2 - z1);
+            const cz = (z1 + z2) / 2;
+
+            for (let i = 0; i < 3; i++) {
+                const sx = 14.3 + i * stepW;
+                const heightRatio = 0.055 * (i + 1);
+                const geom = new THREE.BoxGeometry(stepW * 0.95, 1, depthZ);
+                registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, 0);
+            }
+        }
+
+        function buildCommonStructure(targetGroup, floorNum, hasRightExtension = false, topWallOpenings = []) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            // 1. Плиты перекрытия базового контура
+            addFloorRect(targetGroup, -10.0, -14.0, 16.0, -4.0, false);
+            addFloorRect(targetGroup, -14.0, -4.0, -5.8, 14.0, false);
+            addFloorRect(targetGroup, -5.8, -4.0, 16.0, 4.0, false);
+            addFloorRect(targetGroup, -5.8, 4.0, 12.5, 14.0, false);
+
+            // Правый выступ (для 1, 2 и 3 этажей: каб. 305 и Переход в корпус №2)
+            if (hasRightExtension) {
+                addFloorRect(targetGroup, 16.0, -9.5, 20.4, -2.2, false);
+            }
+
+            // Выделенная тонировка центрального ядра и лестниц
+            addFloorRect(targetGroup, -1.2, -4.0, 8.6, 4.0, true);
+            addFloorRect(targetGroup, 8.6, -3.5, 16.0, 3.8, true);
+
+            // 2. Внешний периметр стен
+            addWallLine(targetGroup, -10.0, -14.0, 16.0, -14.0, topWallOpenings, OUTER_T);
+            addWallLine(targetGroup, -10.0, -14.0, -10.0, -4.0, [], OUTER_T);
+            addWallLine(targetGroup, -14.0, -4.0, -10.0, -4.0, [], OUTER_T);
+            addWallLine(targetGroup, -14.0, -4.0, -14.0, 14.0, [], OUTER_T);
+            addWallLine(targetGroup, -14.0, 14.0, 12.5, 14.0, [], OUTER_T);
+            addWallLine(targetGroup, 12.5, 4.0, 12.5, 14.0, [], OUTER_T);
+            addWallLine(targetGroup, 12.5, 4.0, 16.0, 4.0, [], OUTER_T);
+
+            if (!hasRightExtension) {
+                addWallLine(targetGroup, 16.0, -14.0, 16.0, 4.0, [], OUTER_T);
+            } else {
+                addWallLine(targetGroup, 16.0, -14.0, 16.0, 4.0, [
+                    { from: -5.6, to: -4.0, type: 'door' }
+                ], OUTER_T);
+
+                addWallLine(targetGroup, 16.0, -9.5, 20.4, -9.5, [], OUTER_T);
+                addWallLine(targetGroup, 16.0, -2.2, 20.4, -2.2, [], OUTER_T);
+                addWallLine(targetGroup, 20.4, -9.5, 20.4, -2.2, [
+                    { from: -6.5, to: -5.1, type: 'door' }
+                ], OUTER_T);
+            }
+
+            // 3. Центральное ядро: Лифты и Санузлы (X [-1.2..8.6], Z [-4.0..4.0])
+            addWallLine(targetGroup, -1.2, -4.0, 8.6, -4.0, [
+                { from: 5.2, to: 6.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -1.2, -4.0, -1.2, 4.0, [
+                { from: 1.0, to: 2.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -1.2, 4.0, 8.6, 4.0, [
+                { from: 5.3, to: 6.3, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 8.6, -4.0, 8.6, 4.0, [], INNER_T);
+
+            // Левая шахта лифта
+            addWallLine(targetGroup, 1.4, -4.0, 1.4, -0.5, [], INNER_T);
+            addWallLine(targetGroup, -1.2, -0.5, 1.4, -0.5, [
+                { from: -0.6, to: 0.6, type: 'door' }
+            ], INNER_T);
+            buildElevatorShaftCross(targetGroup, -0.85, -3.5, 1.05, -0.8);
+
+            // Правая шахта лифта
+            addWallLine(targetGroup, 4.8, -4.0, 4.8, -0.5, [], INNER_T);
+            addWallLine(targetGroup, 2.1, -3.0, 4.8, -3.0, [], INNER_T);
+            addWallLine(targetGroup, 2.1, -3.0, 2.1, -0.5, [], INNER_T);
+            addWallLine(targetGroup, 1.4, -0.5, 4.8, -0.5, [
+                { from: 2.7, to: 3.9, type: 'door' }
+            ], INNER_T);
+            buildElevatorShaftCross(targetGroup, 2.35, -2.75, 4.45, -0.8);
+
+            // Малый пилон между шахтами
+            addWallLine(targetGroup, 1.4, -0.5, 1.4, -0.15, [], 0.12);
+            addWallLine(targetGroup, 1.9, -0.5, 1.9, -0.15, [], 0.12);
+            addWallLine(targetGroup, 1.4, -0.15, 1.9, -0.15, [], 0.12);
+
+            // Санузлы (С/У) в правой части ядра
+            addWallLine(targetGroup, 4.8, -0.5, 8.6, -0.5, [], INNER_T);
+            addWallLine(targetGroup, 5.1, -0.5, 5.1, 4.0, [], INNER_T);
+
+            addWallLine(targetGroup, 6.2, -2.3, 6.2, -0.5, [], 0.12);
+            addWallLine(targetGroup, 7.4, -2.3, 7.4, -0.5, [], 0.12);
+
+            addWallLine(targetGroup, 5.1, 2.3, 8.6, 2.3, [], 0.12);
+            addWallLine(targetGroup, 6.7, -0.5, 6.7, 2.3, [], 0.12);
+            addWallLine(targetGroup, 6.7, 1.0, 8.6, 1.0, [], 0.12);
+
+            // 4. Две дублирующие лестницы ЛК№1 и ЛК№2
+            addWallLine(targetGroup, 8.6, -3.5, 16.0, -3.5, [
+                { from: 9.0, to: 10.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 8.6, 0.15, 16.0, 0.15, [], INNER_T);
+
+            addWallLine(targetGroup, 8.6, 3.8, 12.5, 3.8, [
+                { from: 9.0, to: 10.1, type: 'door' }
+            ], INNER_T);
+
+            buildStaircaseUnit(targetGroup, -3.5, 0.15, -1.68, true);
+            buildStaircaseUnit(targetGroup, 0.15, 3.8, 1.98, false);
+
+            // Общие плашки ядра и лестниц
+            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.5, -1.6, true);
+            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.9, 1.0, true);
+            if (floorNum === 6) {
+                addRoomLabel3D(targetGroup, floorNum, 'С/У', 7.2, 3.15, true);
+            }
+            addRoomLabel3D(targetGroup, floorNum, 'ЛК№1', 14.9, -1.68, true);
+            addRoomLabel3D(targetGroup, floorNum, 'ЛК№2', 14.9, 1.98, true);
+        }
+
+        function buildFloor7(targetGroup) {
+            buildCommonStructure(targetGroup, 7, false);
+            const INNER_T = 0.18;
+
+            addWallLine(targetGroup, -10.0, -6.2, 16.0, -6.2, [
+                { from: -3.2, to: -2.0, type: 'door' },
+                { from: -1.0, to: 0.2, type: 'door' },
+                { from: 6.8, to: 9.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -2.2, -14.0, -2.2, -8.8, [], INNER_T);
+            addWallLine(targetGroup, 1.6, -14.0, 1.6, -8.8, [], INNER_T);
+
+            addWallLine(targetGroup, -2.2, -8.8, 5.4, -8.8, [
+                { from: -0.9, to: 0.2, type: 'door' },
+                { from: 3.0, to: 4.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -11.4, 5.4, -11.4, [
+                { from: 3.0, to: 4.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 5.4, -14.0, 5.4, -6.2, [
+                { from: -13.3, to: -12.1, type: 'door' },
+                { from: -8.2, to: -7.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -10.0, -4.0, -5.8, -4.0, [], INNER_T);
+            addWallLine(targetGroup, -14.0, 0.5, -5.8, 0.5, [], INNER_T);
+            addWallLine(targetGroup, -5.8, -4.0, -5.8, 14.0, [
+                { from: -2.2, to: -1.0, type: 'door' },
+                { from: 2.2, to: 4.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -5.8, 7.2, 12.5, 7.2, [
+                { from: -4.6, to: -3.4, type: 'door' },
+                { from: -0.6, to: 1.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -1.6, 7.2, -1.6, 14.0, [
+                { from: 9.6, to: 10.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 8.6, 9.4, 12.5, 9.4, [], INNER_T);
+            addWallLine(targetGroup, 8.6, 9.4, 8.6, 14.0, [
+                { from: 10.8, to: 12.0, type: 'open' }
+            ], INNER_T);
+
+            addRoomLabel3D(targetGroup, 7, '703', -6.2, -10.2);
+            addRoomLabel3D(targetGroup, 7, '703А', -0.3, -11.4);
+            addRoomLabel3D(targetGroup, 7, '704', 10.6, -10.2);
+            addRoomLabel3D(targetGroup, 7, '702А', -9.9, -1.8);
+            addRoomLabel3D(targetGroup, 7, '702', -9.9, 7.2);
+            addRoomLabel3D(targetGroup, 7, '701А', -3.7, 10.8);
+            addRoomLabel3D(targetGroup, 7, '701', 3.5, 10.8);
+        }
+
+        function buildFloor6(targetGroup) {
+            buildCommonStructure(targetGroup, 6, false);
+            const INNER_T = 0.18;
+
+            addWallLine(targetGroup, -10.0, -6.2, 16.0, -6.2, [
+                { from: -1.4, to: 0.6, type: 'door' },
+                { from: 2.9, to: 4.1, type: 'door' },
+                { from: 6.8, to: 9.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -14.0, 1.6, -6.2, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 5.4, -14.0, 5.4, -6.2, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -8.6, 5.4, -8.6, [
+                { from: 2.9, to: 4.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -10.0, -4.0, -5.8, -4.0, [], INNER_T);
+            addWallLine(targetGroup, -14.0, 0.0, -5.8, 0.0, [
+                { from: -9.2, to: -8.0, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, -5.8, -4.0, -5.8, 14.0, [
+                { from: -2.2, to: -1.0, type: 'door' },
+                { from: 1.8, to: 3.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -5.8, 7.2, 12.5, 7.2, [
+                { from: -4.6, to: -3.4, type: 'door' },
+                { from: -1.4, to: 0.6, type: 'door' },
+                { from: 9.2, to: 10.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -2.2, 7.2, -2.2, 14.0, [], INNER_T);
+            addWallLine(targetGroup, 8.6, 7.2, 8.6, 14.0, [], INNER_T);
+
+            addRoomLabel3D(targetGroup, 6, '604', -4.2, -10.2);
+            addRoomLabel3D(targetGroup, 6, '604А', 3.5, -11.4);
+            addRoomLabel3D(targetGroup, 6, '605', 10.6, -10.2);
+            addRoomLabel3D(targetGroup, 6, '603А', -9.9, -2.0);
+            addRoomLabel3D(targetGroup, 6, '603', -9.9, 7.0);
+            addRoomLabel3D(targetGroup, 6, '602А', -4.0, 10.8);
+            addRoomLabel3D(targetGroup, 6, '602', 3.2, 10.8);
+            addRoomLabel3D(targetGroup, 6, '601', 10.5, 10.8);
+        }
+
+        function buildFloor5(targetGroup) {
+            buildCommonStructure(targetGroup, 5, false);
+            const INNER_T = 0.18;
+
+            addWallLine(targetGroup, -10.0, -6.2, 16.0, -6.2, [
+                { from: -1.4, to: 0.6, type: 'door' },
+                { from: 2.9, to: 4.1, type: 'door' },
+                { from: 6.8, to: 9.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -14.0, 1.6, -6.2, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 5.4, -14.0, 5.4, -6.2, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -8.6, 5.4, -8.6, [
+                { from: 2.9, to: 4.1, type: 'open' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -5.8, -6.2, -5.8, -4.0, [
+                { from: -5.6, to: -4.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -10.0, -4.0, -5.8, -4.0, [], INNER_T);
+            addWallLine(targetGroup, -14.0, 0.0, -5.8, 0.0, [], INNER_T);
+            addWallLine(targetGroup, -5.8, -4.0, -5.8, 14.0, [
+                { from: -2.2, to: -1.0, type: 'door' },
+                { from: 1.8, to: 3.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -5.8, 7.2, 12.5, 7.2, [
+                { from: -4.6, to: -3.4, type: 'door' },
+                { from: -1.4, to: 0.6, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -2.2, 7.2, -2.2, 14.0, [], INNER_T);
+
+            addRoomLabel3D(targetGroup, 5, '503', -4.2, -10.2);
+            addRoomLabel3D(targetGroup, 5, '503А', 3.5, -11.4);
+            addRoomLabel3D(targetGroup, 5, '504', 10.6, -10.2);
+            addRoomLabel3D(targetGroup, 5, '502А', -9.9, -2.0);
+            addRoomLabel3D(targetGroup, 5, '502', -9.9, 7.0);
+            addRoomLabel3D(targetGroup, 5, '501А', -4.0, 10.8);
+            addRoomLabel3D(targetGroup, 5, '501', 5.2, 10.8);
+        }
+
+        function buildFloor4(targetGroup) {
+            buildCommonStructure(targetGroup, 4, false);
+            addRoomLabel3D(targetGroup, 4, '4 ЭТАЖ (КАРКАС)', 2.5, -9.8, false, true);
+        }
+
+        function buildFloor3(targetGroup) {
+            buildCommonStructure(targetGroup, 3, true);
+            const INNER_T = 0.18;
+
+            addWallLine(targetGroup, -10.0, -6.2, 16.0, -6.2, [
+                { from: -1.4, to: 0.6, type: 'door' },
+                { from: 6.8, to: 9.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -14.0, 1.6, -6.2, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 5.4, -14.0, 5.4, -6.2, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.6, -8.6, 5.4, -8.6, [
+                { from: 2.9, to: 4.1, type: 'door' }
+            ], INNER_T);
+
+            buildCorridorStepsRight(targetGroup);
+
+            addWallLine(targetGroup, -5.8, -6.2, -5.8, -4.0, [
+                { from: -5.6, to: -4.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -10.0, -4.0, -5.8, -4.0, [], INNER_T);
+            addWallLine(targetGroup, -14.0, 0.0, -5.8, 0.0, [
+                { from: -8.0, to: -6.8, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, -5.8, -4.0, -5.8, 14.0, [
+                { from: -2.2, to: -1.0, type: 'door' },
+                { from: 1.8, to: 3.8, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -5.8, 7.2, 12.5, 7.2, [
+                { from: -4.6, to: -3.4, type: 'door' },
+                { from: -1.4, to: 0.6, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -2.2, 7.2, -2.2, 14.0, [
+                { from: 8.2, to: 9.4, type: 'door' }
+            ], INNER_T);
+
+            addRoomLabel3D(targetGroup, 3, '303', -4.2, -10.2);
+            addRoomLabel3D(targetGroup, 3, '303А', 3.5, -11.4);
+            addRoomLabel3D(targetGroup, 3, '304', 10.6, -10.2);
+            addRoomLabel3D(targetGroup, 3, '305', 18.2, -5.8);
+            addRoomLabel3D(targetGroup, 3, '302А', -9.9, -2.0);
+            addRoomLabel3D(targetGroup, 3, '302', -9.9, 7.0);
+            addRoomLabel3D(targetGroup, 3, '301А', -4.0, 10.8);
+            addRoomLabel3D(targetGroup, 3, '301', 5.2, 10.8);
+        }
+
+        function buildFloor2(targetGroup) {
+            // На верхней внешней стене (Z = -14.0) двустворчатый выход из коридора X [4.9..6.9] ведёт в переход к Корпусу 3
+            buildCommonStructure(targetGroup, 2, true, [
+                { from: 4.9, to: 6.9, type: 'door' }
+            ]);
+            const INNER_T = 0.18;
+
+            addWallLine(targetGroup, -10.0, -6.2, 16.0, -6.2, [
+                { from: -3.8, to: -2.6, type: 'door' },
+                { from: 4.6, to: 7.2, type: 'open' },
+                { from: 13.0, to: 14.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -5.8, -6.2, -5.8, -4.0, [
+                { from: -5.6, to: -4.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -0.4, -14.0, -0.4, -6.2, [], INNER_T);
+            addWallLine(targetGroup, -0.4, -11.4, 4.6, -11.4, [], INNER_T);
+
+            addWallLine(targetGroup, 4.6, -14.0, 4.6, -6.2, [
+                { from: -13.1, to: -11.9, type: 'door' },
+                { from: -8.2, to: -7.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 1.55, -8.85, 2.05, -8.85, [], 0.14);
+            addWallLine(targetGroup, 1.55, -8.35, 2.05, -8.35, [], 0.14);
+            addWallLine(targetGroup, 1.55, -8.85, 1.55, -8.35, [], 0.14);
+            addWallLine(targetGroup, 2.05, -8.85, 2.05, -8.35, [], 0.14);
+            addWallLine(targetGroup, 3.3, -8.5, 4.6, -8.5, [], INNER_T);
+
+            addWallLine(targetGroup, 7.2, -14.0, 7.2, -6.2, [
+                { from: -13.1, to: -11.9, type: 'door' },
+                { from: -8.2, to: -7.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 7.2, -9.4, 16.0, -9.4, [], INNER_T);
+            addWallLine(targetGroup, 12.2, -9.4, 12.2, -6.2, [], INNER_T);
+
+            buildCorridorStepsRight(targetGroup);
+
+            addWallLine(targetGroup, -10.0, -4.0, -5.8, -4.0, [], INNER_T);
+
+            addWallLine(targetGroup, -5.8, -4.0, -5.8, 14.0, [
+                { from: -2.0, to: -0.9, type: 'door' },
+                { from: 0.6, to: 1.7, type: 'door' },
+                { from: 4.5, to: 5.7, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -14.0, -0.4, -5.8, -0.4, [], INNER_T);
+            addWallLine(targetGroup, -7.6, -4.0, -7.6, -0.4, [
+                { from: -2.0, to: -0.9, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, -7.6, -2.3, -5.8, -2.3, [
+                { from: -7.2, to: -6.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -14.0, 3.2, -5.8, 3.2, [
+                { from: -10.8, to: -9.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, -8.2, -0.4, -8.2, 3.2, [
+                { from: 0.9, to: 2.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -14.0, 7.2, -5.8, 7.2, [
+                { from: -7.4, to: -6.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -14.0, 11.2, -11.2, 11.2, [], INNER_T);
+            addWallLine(targetGroup, -9.5, 7.2, -9.5, 8.2, [], INNER_T);
+            addArbitraryWallSegment(targetGroup, -9.5, 8.2, -9.5, 9.2, 0.06, true);
+            addWallLine(targetGroup, -9.5, 9.2, -9.5, 9.5, [], INNER_T);
+            addArbitraryWallSegment(targetGroup, -11.2, 11.2, -9.5, 9.5, INNER_T, false);
+
+            addWallLine(targetGroup, -5.8, 7.2, 12.5, 7.2, [
+                { from: -4.6, to: -3.4, type: 'door' },
+                { from: -2.0, to: -0.9, type: 'door' },
+                { from: 9.2, to: 10.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, -2.6, 7.2, -2.6, 14.0, [], INNER_T);
+
+            addWallLine(targetGroup, -0.4, 7.2, -0.4, 9.4, [
+                { from: 8.0, to: 9.1, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, -2.6, 9.4, 4.0, 9.4, [
+                { from: -2.1, to: -1.0, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 1.4, 9.4, 1.4, 14.0, [], INNER_T);
+
+            addWallLine(targetGroup, 4.0, 7.2, 4.0, 14.0, [
+                { from: 11.2, to: 12.6, type: 'open' }
+            ], INNER_T);
+
+            addRoomLabel3D(targetGroup, 2, '208', -5.2, -10.2);
+            addRoomLabel3D(targetGroup, 2, '210', 2.1, -12.7);
+            addRoomLabel3D(targetGroup, 2, '209', 1.8, -10.0);
+            addRoomLabel3D(targetGroup, 2, '211', 11.6, -11.7);
+            addRoomLabel3D(targetGroup, 2, '212', 9.7, -7.8);
+            addRoomLabel3D(targetGroup, 2, '213', 14.1, -7.8);
+            addRoomLabel3D(targetGroup, 2, 'Переход в\nкорпус №2', 18.2, -5.8, false, true);
+            addRoomLabel3D(targetGroup, 2, '207', -11.2, -2.2);
+            addRoomLabel3D(targetGroup, 2, '206', -11.2, 1.4);
+            addRoomLabel3D(targetGroup, 2, '204', -10.2, 5.2);
+            addRoomLabel3D(targetGroup, 2, '205', -8.0, 12.2);
+            addRoomLabel3D(targetGroup, 2, '203', -4.2, 11.5);
+            addRoomLabel3D(targetGroup, 2, '202', -0.6, 11.8);
+            addRoomLabel3D(targetGroup, 2, '201', 8.5, 11.5);
+        }
+
+        function buildFloor1(targetGroup) {
+            buildCommonStructure(targetGroup, 1, true);
+            addRoomLabel3D(targetGroup, 1, '1 ЭТАЖ (КАРКАС)', 2.5, -9.8, false, true);
+        }
+
+        function buildB2Staircase(targetGroup, x1, x2, zTop, zBot) {
+            addFloorRect(targetGroup, x1, zTop, x2, zBot, true);
+            const xMid = (x1 + x2) / 2;
+            const zStart = zTop + 0.85;
+            const zEnd = zBot - 0.85;
+            addWallLine(targetGroup, xMid, zStart, xMid, zEnd, [], 0.08);
+
+            const steps = 9;
+            const stepD = (zEnd - zStart) / steps;
+            const wFlight = (x2 - x1) / 2 - 0.16;
+
+            for (let m = 0; m < 2; m++) {
+                const cx = m === 0 ? (x1 + xMid) / 2 : (xMid + x2) / 2;
+                const dir = m === 0 ? 1 : -1;
+                for (let i = 0; i < steps; i++) {
+                    const ratio = dir === 1 ? (i + 1) / steps : (steps - i) / steps;
+                    const heightRatio = ratio * 0.52;
+                    const sz = zStart + (i + 0.5) * stepD;
+                    const geom = new THREE.BoxGeometry(wFlight, 1, stepD * 0.94);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, 0);
+                }
+            }
+        }
+
+        function buildB2ExteriorPorch(targetGroup, x1, x2, zNorth, hasSteps = true) {
+            const w = Math.abs(x2 - x1);
+            const cx = (x1 + x2) / 2;
+
+            if (!hasSteps) {
+                addFloorRect(targetGroup, x1, zNorth, x2, B2_Z_TOP, true);
+                return;
+            }
+
+            const zLandingNorth = B2_Z_TOP - (B2_Z_TOP - zNorth) * 0.42;
+            addFloorRect(targetGroup, x1, zLandingNorth, x2, B2_Z_TOP, true);
+
+            const steps = 6;
+            const totalStepsDepth = Math.abs(zLandingNorth - zNorth);
+            const sDepth = totalStepsDepth / steps;
+
+            for (let i = 0; i < steps; i++) {
+                const sz = zNorth + (i + 0.5) * sDepth;
+                const heightRatio = 0.03 + ((i + 1) / steps) * 0.12;
+                const geom = new THREE.BoxGeometry(w, 1, sDepth * 0.95);
+                registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+            }
+        }
+
+        function buildBuilding2Floor1(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            addFloorRect(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_BOT, false);
+
+            buildB2ExteriorPorch(targetGroup, B2_LK3_X1, 22.8, -17.0, true);
+            buildB2ExteriorPorch(targetGroup, B2_LK2_X1, B2_LK2_X2, -15.4, false);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_START, B2_Z_BOT, [
+                { from: -6.5, to: -5.1, type: 'door' }
+            ], OUTER_T);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_TOP, [
+                { from: 20.9, to: 22.2, type: 'door' },
+                { from: 42.1, to: 43.3, type: 'door' },
+                { from: 43.9, to: 45.1, type: 'door' },
+                { from: 64.8, to: 66.1, type: 'door' }
+            ], OUTER_T);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_BOT, B2_X_END, B2_Z_BOT, [], OUTER_T);
+            addWallLine(targetGroup, B2_X_END, B2_Z_TOP, B2_X_END, B2_Z_BOT, [], OUTER_T);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_CORR_TOP, B2_X_END, B2_Z_CORR_TOP, [
+                { from: 24.2, to: 25.4, type: 'door' },
+                { from: 33.0, to: 34.2, type: 'door' },
+                { from: 39.6, to: 40.8, type: 'door' },
+                { from: 42.6, to: 44.6, type: 'door' },
+                { from: 45.4, to: 48.0, type: 'open' },
+                { from: 49.0, to: 50.8, type: 'door' },
+                { from: 58.6, to: 59.8, type: 'door' },
+                { from: 61.8, to: 63.0, type: 'door' },
+                { from: 65.1, to: 67.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, B2_X_START, B2_LK3_Z_BOT, 27.4, B2_LK3_Z_BOT, [], INNER_T);
+            addWallLine(targetGroup, B2_LK3_X2, B2_Z_TOP, B2_LK3_X2, B2_LK3_Z_BOT, [
+                { from: -12.4, to: -11.2, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 27.4, B2_Z_TOP, 27.4, B2_Z_CORR_TOP, [
+                { from: -12.4, to: -11.2, type: 'door' }
+            ], INNER_T);
+            buildB2Staircase(targetGroup, B2_LK3_X1 + 0.15, B2_LK3_X2 - 0.15, B2_Z_TOP + 0.15, B2_LK3_Z_BOT - 0.15);
+
+            addWallLine(targetGroup, 38.6, B2_Z_TOP, 38.6, B2_Z_CORR_TOP, [], INNER_T);
+
+            addWallLine(targetGroup, B2_LK2_X1, B2_Z_TOP, B2_LK2_X1, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 38.6, -9.8, B2_LK2_X1, -9.8, [
+                { from: 39.0, to: 40.1, type: 'door' }
+            ], 0.14);
+            addWallLine(targetGroup, 40.2, -11.6, B2_LK2_X1, -11.6, [], 0.14);
+
+            addWallLine(targetGroup, B2_LK2_X2, B2_Z_TOP, B2_LK2_X2, B2_Z_CORR_TOP, [], INNER_T);
+            buildB2Staircase(targetGroup, B2_LK2_X1 + 0.1, B2_LK2_X2 - 0.1, B2_Z_TOP + 0.1, B2_Z_CORR_TOP - 0.1);
+
+            addWallLine(targetGroup, 48.0, B2_Z_TOP, 48.0, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 58.2, B2_Z_TOP, 58.2, B2_Z_CORR_TOP, [
+                { from: -9.2, to: -8.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 61.2, B2_Z_TOP, 61.2, B2_Z_CORR_TOP, [], INNER_T);
+
+            addWallLine(targetGroup, B2_LK1_X1, B2_Z_TOP, B2_LK1_X1, B2_Z_CORR_TOP, [], INNER_T);
+            addFloorRect(targetGroup, 61.2, B2_Z_TOP, B2_LK1_X1, B2_Z_CORR_TOP, true);
+            addWallLine(targetGroup, 61.2, -9.6, B2_LK1_X1, -9.6, [
+                { from: 61.6, to: 62.6, type: 'door' }
+            ], 0.14);
+            addWallLine(targetGroup, 62.7, -12.0, B2_LK1_X1, -12.0, [], 0.12);
+            addWallLine(targetGroup, 62.7, -10.8, B2_LK1_X1, -10.8, [], 0.12);
+
+            buildB2Staircase(targetGroup, B2_LK1_X1 + 0.1, B2_LK1_X2 - 0.15, B2_Z_TOP + 0.1, B2_Z_CORR_TOP - 0.1);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_CORR_BOT, B2_X_END, B2_Z_CORR_BOT, [
+                { from: 22.0, to: 23.2, type: 'door' },
+                { from: 31.2, to: 33.0, type: 'door' },
+                { from: 46.4, to: 48.2, type: 'door' },
+                { from: 55.8, to: 57.6, type: 'door' },
+                { from: 65.2, to: 66.4, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 38.6, B2_Z_CORR_BOT, 38.6, B2_Z_BOT, [], INNER_T);
+            addWallLine(targetGroup, 54.8, B2_Z_CORR_BOT, 54.8, B2_Z_BOT, [], INNER_T);
+            addWallLine(targetGroup, B2_LK1_X1, B2_Z_CORR_BOT, B2_LK1_X1, B2_Z_BOT, [], INNER_T);
+
+            [23.8, 27.0].forEach(cx => addSquareColumn(targetGroup, cx, -7.4, 0.36));
+            [23.8, 27.0, 30.2, 33.6, 36.8, 42.6, 45.6, 48.8, 52.0].forEach(cx => addSquareColumn(targetGroup, cx, -4.2, 0.36));
+
+            addRoomLabel3D(targetGroup, 1, 'ЛК№3', 22.6, -12.1, true, false, 2, 0.92);
+            addRoomLabel3D(targetGroup, 1, '103', 23.9, -8.8, false, false, 2, 0.95);
+            addRoomLabel3D(targetGroup, 1, '105', 33.0, -10.5, false, false, 2, 1.0);
+            addRoomLabel3D(targetGroup, 1, '107', 40.2, -8.4, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 1, 'ЛК№2', 43.6, -12.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 1, '109', 53.1, -10.5, false, false, 2, 1.0);
+            addRoomLabel3D(targetGroup, 1, '111', 59.7, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 1, 'С/У', 62.7, -11.6, true, false, 2, 0.85);
+            addRoomLabel3D(targetGroup, 1, 'С/У', 62.7, -8.3, true, false, 2, 0.85);
+            addRoomLabel3D(targetGroup, 1, 'ЛК№1', 66.1, -12.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 1, '104', 29.5, -0.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 1, '106', 46.7, -0.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 1, '108', 59.5, -0.5, false, false, 2, 1.0);
+            addRoomLabel3D(targetGroup, 1, '110', 66.1, -0.5, true, false, 2, 0.92);
+        }
+
+        function buildBuilding2Floor2(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            addFloorRect(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_BOT, false);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_START, B2_Z_BOT, [
+                { from: -6.5, to: -5.1, type: 'door' }
+            ], OUTER_T);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_TOP, [
+                { from: 36.5, to: 38.5, type: 'door' } // Северный выход 2-го этажа Корпуса 2 (проход X [36.2..38.8] между 205 и С/У)
+            ], OUTER_T);
+            addWallLine(targetGroup, B2_X_START, B2_Z_BOT, B2_X_END, B2_Z_BOT, [], OUTER_T);
+            addWallLine(targetGroup, B2_X_END, B2_Z_TOP, B2_X_END, B2_Z_BOT, [], OUTER_T);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_CORR_TOP, B2_X_END, B2_Z_CORR_TOP, [
+                { from: 24.0, to: 25.2, type: 'door' },
+                { from: 32.2, to: 34.0, type: 'door' },
+                { from: 36.2, to: 38.8, type: 'open' },
+                { from: 39.1, to: 40.1, type: 'door' },
+                { from: 40.5, to: 41.5, type: 'door' },
+                { from: 42.6, to: 44.6, type: 'door' },
+                { from: 46.0, to: 47.8, type: 'door' },
+                { from: 57.6, to: 59.4, type: 'door' },
+                { from: 61.4, to: 62.6, type: 'door' },
+                { from: 65.1, to: 67.1, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 23.4, B2_Z_TOP, 23.4, B2_Z_CORR_TOP, [
+                { from: -9.6, to: -8.2, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 26.4, B2_Z_TOP, 26.4, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 36.2, B2_Z_TOP, 36.2, B2_Z_CORR_TOP, [], INNER_T);
+
+            addFloorRect(targetGroup, 38.8, B2_Z_TOP, B2_LK2_X1, B2_Z_CORR_TOP, true);
+            addWallLine(targetGroup, 38.8, B2_Z_TOP, 38.8, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, B2_LK2_X1, B2_Z_TOP, B2_LK2_X1, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 40.3, -9.8, 40.3, B2_Z_CORR_TOP, [], 0.14);
+            addWallLine(targetGroup, 40.3, -12.6, B2_LK2_X1, -12.6, [], 0.12);
+            addWallLine(targetGroup, 40.3, -11.2, B2_LK2_X1, -11.2, [], 0.12);
+            addWallLine(targetGroup, 40.3, -9.8, B2_LK2_X1, -9.8, [], 0.12);
+
+            addWallLine(targetGroup, B2_LK2_X2, B2_Z_TOP, B2_LK2_X2, B2_Z_CORR_TOP, [], INNER_T);
+            buildB2Staircase(targetGroup, B2_LK2_X1 + 0.1, B2_LK2_X2 - 0.1, B2_Z_TOP + 0.1, B2_Z_CORR_TOP - 0.1);
+
+            addWallLine(targetGroup, 48.4, B2_Z_TOP, 48.4, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 60.6, B2_Z_TOP, 60.6, B2_Z_CORR_TOP, [], INNER_T);
+
+            addWallLine(targetGroup, B2_LK1_X1, B2_Z_TOP, B2_LK1_X1, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 60.6, -9.8, B2_LK1_X1, -9.8, [
+                { from: 61.0, to: 62.2, type: 'door' }
+            ], INNER_T);
+
+            buildB2Staircase(targetGroup, B2_LK1_X1 + 0.1, B2_LK1_X2 - 0.15, B2_Z_TOP + 0.1, B2_Z_CORR_TOP - 0.1);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_CORR_BOT, B2_X_END, B2_Z_CORR_BOT, [
+                { from: 21.3, to: 22.5, type: 'door' },
+                { from: 24.3, to: 25.5, type: 'door' },
+                { from: 27.2, to: 29.0, type: 'door' },
+                { from: 39.6, to: 40.8, type: 'door' },
+                { from: 41.8, to: 45.4, type: 'open' },
+                { from: 46.2, to: 47.6, type: 'door' },
+                { from: 49.2, to: 51.0, type: 'door' },
+                { from: 61.6, to: 63.4, type: 'door' }
+            ], INNER_T);
+
+            [23.4, 26.4, 38.8, B2_LK2_X1, B2_LK2_X2, 48.4, 57.6].forEach(vx => {
+                addWallLine(targetGroup, vx, B2_Z_CORR_BOT, vx, B2_Z_BOT, [], INNER_T);
+            });
+
+            [22.6, 23.6, 51.4, 54.2, 56.8].forEach(cx => addSquareColumn(targetGroup, cx, -7.4, 0.36));
+            [29.5, 32.5, 35.5, 45.8, 51.4, 54.4, 60.8, 63.8].forEach(cx => addSquareColumn(targetGroup, cx, -4.2, 0.36));
+
+            addRoomLabel3D(targetGroup, 2, '203', 24.9, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, '205', 31.3, -10.5, false, false, 2, 1.0);
+            addRoomLabel3D(targetGroup, 2, 'С/У', 39.5, -8.4, true, false, 2, 0.80);
+            addRoomLabel3D(targetGroup, 2, 'С/У', 41.0, -8.4, true, false, 2, 0.80);
+            addRoomLabel3D(targetGroup, 2, 'ЛК№2', 43.6, -12.5, true, false, 2, 0.88);
+            addRoomLabel3D(targetGroup, 2, '209', 46.9, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, '211', 54.5, -10.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 2, '213', 62.4, -8.4, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, 'ЛК№1', 66.1, -12.5, true, false, 2, 0.88);
+
+            addRoomLabel3D(targetGroup, 2, '202', 21.9, -0.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, '204', 24.9, -0.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, '206', 32.6, -0.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 2, '208', 40.3, -0.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, '210', 46.9, -0.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 2, '212', 53.0, -0.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 2, '214', 62.8, -0.5, false, false, 2, 1.05);
+        }
+
+        function buildBuilding2Floor3(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            addFloorRect(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_BOT, false);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_START, B2_Z_BOT, [], OUTER_T);
+            addWallLine(targetGroup, B2_X_START, B2_Z_TOP, B2_X_END, B2_Z_TOP, [], OUTER_T);
+            addWallLine(targetGroup, B2_X_START, B2_Z_BOT, B2_X_END, B2_Z_BOT, [], OUTER_T);
+            addWallLine(targetGroup, B2_X_END, B2_Z_TOP, B2_X_END, B2_Z_BOT, [], OUTER_T);
+
+            addWallLine(targetGroup, 23.2, B2_Z_TOP, 23.2, B2_Z_CORR_BOT, [], INNER_T);
+
+            addWallLine(targetGroup, 23.2, -9.8, 25.6, -9.8, [
+                { from: 23.8, to: 25.0, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 25.6, B2_Z_CORR_TOP, B2_LK1_X1, B2_Z_CORR_TOP, [
+                { from: 26.6, to: 27.9, type: 'door' },
+                { from: 29.9, to: 31.2, type: 'door' },
+                { from: 33.2, to: 34.5, type: 'door' },
+                { from: 36.5, to: 37.8, type: 'door' },
+                { from: 39.1, to: 40.1, type: 'door' },
+                { from: 40.5, to: 41.5, type: 'door' },
+                { from: B2_LK2_X1, to: B2_LK2_X2, type: 'open' },
+                { from: B2_LK2_X2, to: 48.4, type: 'open' },
+                { from: 51.2, to: 52.6, type: 'door' },
+                { from: 56.4, to: 57.8, type: 'door' },
+                { from: 61.8, to: 63.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 25.6, B2_Z_TOP, 25.6, B2_Z_CORR_TOP, [
+                { from: -12.6, to: -11.2, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 28.9, B2_Z_TOP, 28.9, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 32.2, B2_Z_TOP, 32.2, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 35.5, B2_Z_TOP, 35.5, B2_Z_CORR_TOP, [
+                { from: -12.6, to: -11.2, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 38.8, B2_Z_TOP, 38.8, B2_Z_CORR_TOP, [
+                { from: -12.8, to: -11.4, type: 'door' }
+            ], INNER_T);
+
+            addFloorRect(targetGroup, 38.8, B2_Z_TOP, B2_LK2_X1, B2_Z_CORR_TOP, true);
+            addWallLine(targetGroup, B2_LK2_X1, B2_Z_TOP, B2_LK2_X1, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 38.8, -10.2, B2_LK2_X1, -10.2, [], 0.14);
+            addWallLine(targetGroup, 40.3, -10.2, 40.3, B2_Z_CORR_TOP, [], 0.14);
+
+            addWallLine(targetGroup, B2_LK2_X2, B2_Z_TOP, B2_LK2_X2, B2_Z_CORR_TOP, [], INNER_T);
+            buildB2Staircase(targetGroup, B2_LK2_X1 + 0.1, B2_LK2_X2 - 0.1, B2_Z_TOP + 0.1, B2_Z_CORR_TOP - 0.1);
+            addWallLine(targetGroup, B2_LK2_X1, B2_Z_CORR_TOP, B2_LK2_X1, B2_Z_CORR_BOT, [
+                { from: -6.4, to: -5.2, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, B2_LK2_X2, B2_Z_CORR_TOP, B2_LK2_X2, B2_Z_CORR_BOT, [
+                { from: -6.4, to: -5.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 48.4, B2_Z_TOP, 48.4, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 54.6, B2_Z_TOP, 54.6, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, 61.0, B2_Z_TOP, 61.0, B2_Z_CORR_TOP, [], INNER_T);
+            addWallLine(targetGroup, B2_LK1_X1, B2_Z_TOP, B2_LK1_X1, B2_Z_CORR_BOT, [
+                { from: -6.4, to: -5.2, type: 'door' }
+            ], INNER_T);
+
+            buildB2Staircase(targetGroup, B2_LK1_X1 + 0.1, B2_LK1_X2 - 0.15, B2_Z_TOP + 0.1, B2_Z_CORR_TOP - 0.1);
+
+            addWallLine(targetGroup, B2_X_START, B2_Z_CORR_BOT, B2_X_END, B2_Z_CORR_BOT, [
+                { from: 21.1, to: 22.5, type: 'door' },
+                { from: 24.0, to: 25.3, type: 'door' },
+                { from: 36.2, to: 37.5, type: 'door' },
+                { from: 46.2, to: 48.0, type: 'door' },
+                { from: 61.8, to: 63.2, type: 'door' },
+                { from: 66.4, to: 67.6, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, B2_LK2_X1, B2_Z_CORR_BOT, B2_LK2_X1, B2_Z_BOT, [], INNER_T);
+            addWallLine(targetGroup, 54.6, B2_Z_CORR_BOT, 54.6, B2_Z_BOT, [], INNER_T);
+            addWallLine(targetGroup, B2_LK1_X1, B2_Z_CORR_BOT, B2_LK1_X1, B2_Z_BOT, [], INNER_T);
+
+            addWallLine(targetGroup, 66.1, B2_Z_CORR_BOT, 66.1, -0.5, [
+                { from: -3.0, to: -1.6, type: 'door' }
+            ], 0.14);
+            addWallLine(targetGroup, B2_LK1_X1, -0.5, B2_X_END, -0.5, [
+                { from: 66.4, to: 67.6, type: 'door' }
+            ], 0.14);
+
+            addRoomLabel3D(targetGroup, 3, '302', 21.8, -9.2, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 3, '304', 27.25, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 3, '305', 30.55, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 3, '306', 33.85, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 3, '307', 37.15, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 3, 'С/У', 39.55, -8.5, true, false, 2, 0.78);
+            addRoomLabel3D(targetGroup, 3, 'С/У', 41.05, -8.5, true, false, 2, 0.78);
+            addRoomLabel3D(targetGroup, 3, 'ЛК№2', 43.6, -12.5, true, false, 2, 0.88);
+            addRoomLabel3D(targetGroup, 3, '313', 51.5, -10.5, false, false, 2, 1.0);
+            addRoomLabel3D(targetGroup, 3, '314', 57.8, -10.5, false, false, 2, 1.0);
+            addRoomLabel3D(targetGroup, 3, '315', 62.6, -10.5, true, false, 2, 0.90);
+            addRoomLabel3D(targetGroup, 3, 'ЛК№1', 66.1, -12.5, true, false, 2, 0.88);
+
+            addRoomLabel3D(targetGroup, 3, '308', 31.1, -0.5, false, false, 2, 1.1);
+            addRoomLabel3D(targetGroup, 3, '312', 48.2, -0.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 3, '316', 59.4, -0.5, false, false, 2, 1.05);
+            addRoomLabel3D(targetGroup, 3, '318', 65.15, -2.5, true, false, 2, 0.82);
+        }
+
+        // Двухмаршевая (или одномаршевая для ЛК №2 на 1 эт.) лестница для Корпуса 3 на западной стороне (X от -1.6 до 4.6)
+        function buildB3Staircase(targetGroup, xWest, xEast, zNorth, zSouth, singleFlight = false) {
+            addFloorRect(targetGroup, xWest, zNorth, xEast, zSouth, true);
+            const zMid = (zNorth + zSouth) / 2;
+            const xStart = xWest + 0.95;
+            const xEnd = xEast - 0.95;
+
+            if (!singleFlight) {
+                addWallLine(targetGroup, xStart, zMid, xEnd, zMid, [], 0.08);
+            } else {
+                addWallLine(targetGroup, xStart, zMid, xEnd, zMid, [], 0.08);
+                addWallLine(targetGroup, xStart, zNorth + 0.1, xStart, zMid, [], 0.08);
+            }
+
+            const steps = 9;
+            const stepW = (xEnd - xStart) / steps;
+            const dFlight = (zSouth - zNorth) / 2 - 0.16;
+
+            for (let m = 0; m < (singleFlight ? 1 : 2); m++) {
+                const cz = m === 0 ? (zNorth + zMid) / 2 : (zMid + zSouth) / 2;
+                const dir = m === 0 ? -1 : 1;
+                for (let i = 0; i < steps; i++) {
+                    const ratio = dir === 1 ? (i + 1) / steps : (steps - i) / steps;
+                    const heightRatio = ratio * 0.52;
+                    const sx = xStart + (i + 0.5) * stepW;
+                    const geom = new THREE.BoxGeometry(stepW * 0.94, 1, dFlight);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, 0);
+                }
+            }
+        }
+
+        // Открытое уличное крыльцо для 1-го этажа Корпуса 3 на западном фасаде (площадка + открытые ступени БЕЗ боковых стен)
+        function buildB3ExteriorPorchWest(targetGroup, zNorth, zSouth, xOuter, xWall, stepsDir = 'west') {
+            const porchW = Math.abs(xWall - xOuter);
+            const steps = 5;
+
+            if (stepsDir === 'west') {
+                // Площадка у стены и широкие ступени на запад (крыльцо у 108/109)
+                const xLandingWest = xWall - porchW * 0.45;
+                addFloorRect(targetGroup, xLandingWest, zNorth, xWall, zSouth, true);
+                const stepSpanX = Math.abs(xLandingWest - xOuter);
+                const sDepth = stepSpanX / steps;
+                const cz = (zNorth + zSouth) / 2;
+                const dz = Math.abs(zSouth - zNorth);
+                for (let i = 0; i < steps; i++) {
+                    const sx = xLandingWest - (i + 0.5) * sDepth;
+                    const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
+                    const geom = new THREE.BoxGeometry(sDepth * 0.94, 1, dz);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14);
+                }
+            } else if (stepsDir === 'south') {
+                // Площадка у выхода из ЛК №1 и ступени с южной стороны
+                addFloorRect(targetGroup, xOuter, zNorth, xWall, zSouth, true);
+                const stepSpanZ = 1.25;
+                const sDepth = stepSpanZ / steps;
+                const cx = (xWall + xOuter) / 2;
+                for (let i = 0; i < steps; i++) {
+                    const sz = zSouth + (i + 0.5) * sDepth;
+                    const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
+                    const geom = new THREE.BoxGeometry(porchW, 1, sDepth * 0.94);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                }
+            }
+        }
+
+        /**
+         * КОРПУС 3 — ЭТАЖ 1 (Габариты: X [-1.6..14.0], Z [-61.6..-14.0], вплотную к Корпусу 1 на Z = -14.0)
+         * Точное совпадение с планом 1-го этажа:
+         * - Большой Г-образный зал 103 на юге (огибает 104 и 102 до восточной стены X = 14.0) с тамбуром у Z = -14.0
+         * - Выход во двор между 102 и 105 с внутренним тамбуром на две двустворчатые двери
+         * - На западе: ЛК №2 (короткий одномаршевый подъём), 106, 107, боковой коридор и тамбур 108/109 с широким крыльцом
+         * - П-образный узел из 3 санузлов (два внешних + малый центральный у коридора)
+         * - ЛК №1 (двухмаршевая с выходом на крыльцо), 114, 114А (Г-образная), торцевой тамбур и залы 117 / 116
+         */
+        function buildBuilding3Floor1(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            // Основная плита перекрытия 1-го этажа Корпуса 3
+            addFloorRect(targetGroup, B3_X_WEST, B3_Z_NORTH, B3_X_EAST, B3_Z_SOUTH, false);
+
+            // Открытые внешние площадки и крыльца на 1-м этаже (без боковых стен):
+            // 1) Восточная площадка у выхода из холла 112 (X [14.0..15.6], Z [-47.8..-44.2])
+            addFloorRect(targetGroup, B3_X_EAST, -47.8, 15.6, -44.2, true);
+            // 2) Западное крыльцо со ступенями на юг у ЛК №1 (X [-3.4..-1.6], Z [-47.8..-45.0])
+            buildB3ExteriorPorchWest(targetGroup, B3_SHAFT_NORTH_Z1, -45.0, -3.4, B3_X_WEST, 'south');
+            // 3) Западное широкое крыльцо со ступенями на запад у тамбура 108/109 (X [-3.8..-1.6], Z [-40.4..-34.8])
+            buildB3ExteriorPorchWest(targetGroup, -40.4, -34.8, -3.8, B3_X_WEST, 'west');
+
+            // --- ВНЕШНИЙ ПЕРИМЕТР СТЕН КОРПУСА 3 (ЭТАЖ 1) ---
+            addWallLine(targetGroup, B3_X_WEST, B3_Z_SOUTH, B3_X_EAST, B3_Z_SOUTH, [], OUTER_T);
+            addWallLine(targetGroup, B3_X_WEST, B3_Z_NORTH, B3_X_EAST, B3_Z_NORTH, [], OUTER_T);
+
+            // Западная внешняя стена X = -1.6 (два двустворчатых выхода на крыльца)
+            addWallLine(targetGroup, B3_X_WEST, B3_Z_NORTH, B3_X_WEST, B3_Z_SOUTH, [
+                { from: -47.2, to: -45.4, type: 'door' }, // Двустворчатый выход из ЛК №1 на крыльцо
+                { from: -37.8, to: -36.0, type: 'door' }  // Двустворчатый выход из тамбура у 108/109 на крыльцо
+            ], OUTER_T);
+
+            // Восточная внешняя стена X = 14.0 (два двустворчатых выхода во двор)
+            addWallLine(targetGroup, B3_X_EAST, B3_Z_NORTH, B3_X_EAST, B3_Z_SOUTH, [
+                { from: -46.9, to: -45.1, type: 'door' }, // Двустворчатый выход из 112 на восточную площадку
+                { from: -29.5, to: -27.7, type: 'door' }  // Двустворчатый выход из коридора между 102 и 105
+            ], OUTER_T);
+
+            // --- ЮЖНЫЙ ЗАЛ 103 (Г-образный: Z от -26.8 до -14.0 на западе и Z от -22.0 до -14.0 на востоке) ---
+            // Прямоугольный выступ-тамбур у южной торцевой стены зала 103 (X [4.2..9.0], Z [-17.4..-14.0])
+            addWallLine(targetGroup, 4.2, -17.4, 4.2, B3_Z_SOUTH, [], INNER_T);
+            addWallLine(targetGroup, 9.0, -17.4, 9.0, B3_Z_SOUTH, [], INNER_T);
+            addWallLine(targetGroup, 4.2, -17.4, 9.0, -17.4, [
+                { from: 5.5, to: 7.7, type: 'door' } // Двустворчатая дверь на северной грани тамбура
+            ], INNER_T);
+
+            // Северная стена зала 103 и вход из центрального коридора (Z = -26.8, X [-1.6..7.2])
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_SOUTH_Z2, B3_X_CORR_E, B3_SHAFT_SOUTH_Z2, [
+                { from: 5.0, to: 6.8, type: 'door' } // Двустворчатая дверь из коридора в зал 103
+            ], INNER_T);
+
+            // Кабинеты 104 (Z [-24.4..-22.0]) и 102 (Z [-26.8..-24.4]), вдающиеся в зал 103 справа (X [7.2..14.0])
+            addWallLine(targetGroup, B3_X_CORR_E, -26.8, B3_X_CORR_E, -22.0, [
+                { from: -26.2, to: -25.0, type: 'door' }, // Дверь в 102 из зала 103
+                { from: -23.8, to: -22.6, type: 'door' }  // Дверь в 104 из зала 103
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -22.0, B3_X_EAST, -22.0, [], INNER_T); // Южная стена 104 (ниже неё зал 103 идет до X=14.0)
+            addWallLine(targetGroup, B3_X_CORR_E, -24.4, B3_X_EAST, -24.4, [], INNER_T); // Перегородка между 104 и 102
+            addWallLine(targetGroup, B3_X_CORR_E, -26.8, B3_X_EAST, -26.8, [
+                { from: 7.8, to: 9.0, type: 'door' },   // Левая дверь в 102 из бокового прохода
+                { from: 9.6, to: 10.8, type: 'door' }   // Правая дверь в 102 из бокового прохода
+            ], INNER_T);
+
+            // --- ЗАПАДНЫЙ РЯД (X от -1.6 до 4.6): ЛК №2, 106, 107, боковой проход, 109/108, С/У, ЛК №1, 114, 114А, 117 ---
+            // Западная стена главного коридора X = 4.6 (от Z = -55.2 до Z = -26.8)
+            addWallLine(targetGroup, B3_X_CORR_W, -55.2, B3_X_CORR_W, B3_SHAFT_SOUTH_Z2, [
+                { from: -54.8, to: -53.6, type: 'door' }, // Дверь в 114А
+                { from: -52.2, to: -50.6, type: 'door' }, // Двустворчатая дверь в 114
+                { from: -46.9, to: -45.1, type: 'door' }, // Двустворчатая дверь в ЛК №1 (северная шахта)
+                { from: -43.9, to: -42.9, type: 'door' }, // Дверь в северный С/У
+                { from: -42.4, to: -41.4, type: 'door' }, // Дверь в малый средний С/У
+                { from: -40.9, to: -39.9, type: 'door' }, // Дверь в южный С/У
+                { from: -39.2, to: -38.0, type: 'door' }, // Дверь в 109
+                { from: -36.8, to: -35.0, type: 'open' }, // Открытый поворот коридора на запад к тамбуру 108/109 и входу в 107
+                { from: -31.8, to: -30.6, type: 'door' }, // Дверь в 106
+                { from: -29.5, to: -27.7, type: 'door' }  // Двустворчатая дверь в ЛК №2 (южная шахта)
+            ], INNER_T);
+
+            // Южная шахта лестницы: ЛК №2 (X [-1.6..4.6], Z [-30.4..-26.8]) — на 1 этаже короткий одномаршевый подъём (singleFlight = true)
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_SOUTH_Z1, B3_X_CORR_W, B3_SHAFT_SOUTH_Z1, [], INNER_T);
+            buildB3Staircase(targetGroup, B3_X_WEST + 0.1, B3_X_CORR_W - 0.1, B3_SHAFT_SOUTH_Z1 + 0.1, B3_SHAFT_SOUTH_Z2 - 0.1, true);
+
+            // Кабинет 106 (Z [-32.6..-30.4]) и Кабинет 107 (Z [-35.0..-32.6])
+            addWallLine(targetGroup, B3_X_WEST, -32.6, B3_X_CORR_W, -32.6, [], INNER_T);
+            addWallLine(targetGroup, B3_X_WEST, -35.0, B3_X_CORR_W, -35.0, [
+                { from: 1.2, to: 2.4, type: 'door' } // Дверь в 107 из бокового западного прохода
+            ], INNER_T);
+
+            // Узел бокового прохода, тамбура западного входа, 108 и 109 (Z [-39.6..-35.0])
+            // Боковой коридор идёт от X = 4.6 до X = 0.8 (Z [-36.8..-35.0]), далее влево тамбур выхода (X [-1.6..0.8], Z [-38.0..-35.0])
+            addWallLine(targetGroup, 0.8, -36.8, B3_X_CORR_W, -36.8, [], INNER_T); // Северная стена бокового прохода (отделяет 109)
+            addWallLine(targetGroup, 0.8, -39.6, 0.8, -35.0, [
+                { from: -36.5, to: -35.3, type: 'door' } // Дверь из бокового прохода в тамбур западного крыльца
+            ], INNER_T);
+            // Перегородка между тамбуром крыльца и маленькой комнатой 108 (Z = -38.0, X [-1.6..0.8])
+            addWallLine(targetGroup, B3_X_WEST, -38.0, 0.8, -38.0, [
+                { from: -0.9, to: 0.3, type: 'door' } // Дверь из тамбура в 108
+            ], INNER_T);
+            // Капитальная стена между 108/109 и блоком С/У (Z = -39.6, X [-1.6..4.6])
+            addWallLine(targetGroup, B3_X_WEST, -39.6, B3_X_CORR_W, -39.6, [], INNER_T);
+
+            // Блок из 3-х Санузлов С/У (Z [-44.2..-39.6], X [-1.6..4.6]):
+            // Малый центральный С/У у коридора (X [2.0..4.6], Z [-42.8..-41.0]) и два больших С/У, смыкающихся по Z = -41.9 слева от него
+            addFloorRect(targetGroup, B3_X_WEST, B3_SHAFT_NORTH_Z2, B3_X_CORR_W, -39.6, true);
+            addWallLine(targetGroup, 2.0, -42.8, B3_X_CORR_W, -42.8, [], 0.14);
+            addWallLine(targetGroup, 2.0, -41.0, B3_X_CORR_W, -41.0, [], 0.14);
+            addWallLine(targetGroup, 2.0, -42.8, 2.0, -41.0, [], 0.14);
+            addWallLine(targetGroup, B3_X_WEST, -41.9, 2.0, -41.9, [], 0.14);
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_NORTH_Z2, B3_X_CORR_W, B3_SHAFT_NORTH_Z2, [], INNER_T); // Z = -44.2
+
+            // Северная шахта лестницы: ЛК №1 (X [-1.6..4.6], Z [-47.8..-44.2]) — двухмаршевая лестница
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_NORTH_Z1, B3_X_CORR_W, B3_SHAFT_NORTH_Z1, [], INNER_T); // Z = -47.8
+            buildB3Staircase(targetGroup, B3_X_WEST + 0.1, B3_X_CORR_W - 0.1, B3_SHAFT_NORTH_Z1 + 0.1, B3_SHAFT_NORTH_Z2 - 0.1, false);
+
+            // Кабинет 114 (Z [-53.4..-47.8]) и Г-образный кабинет 114А (Z [-55.8..-53.4], с выступом 114 у коридора)
+            addWallLine(targetGroup, B3_X_WEST, -53.4, 2.6, -53.4, [], INNER_T);
+            addWallLine(targetGroup, 2.6, -54.4, 2.6, -53.4, [
+                { from: -54.3, to: -53.5, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 2.6, -54.4, B3_X_CORR_W, -54.4, [], INNER_T);
+            addWallLine(targetGroup, B3_X_WEST, -55.8, B3_X_CORR_W, -55.8, [], INNER_T);
+
+            // --- ВОСТОЧНЫЙ РЯД (X от 7.2 до 14.0): проход во двор, 105, 111, 111А, 112, 113А, 113, 116 ---
+            // Восточная стена главного коридора X = 7.2 (от Z = -55.2 до Z = -26.8)
+            addWallLine(targetGroup, B3_X_CORR_E, -55.2, B3_X_CORR_E, B3_SHAFT_SOUTH_Z2, [
+                { from: -52.2, to: -50.4, type: 'door' }, // Двустворчатая дверь в 113
+                { from: -49.0, to: -47.8, type: 'door' }, // Дверь в 113А
+                { from: -46.9, to: -45.1, type: 'door' }, // Двустворчатая дверь в 112
+                { from: -43.8, to: -42.6, type: 'door' }, // Дверь в 111А
+                { from: -38.4, to: -37.2, type: 'door' }, // Дверь в зал 111
+                { from: -31.8, to: -30.6, type: 'door' }, // Дверь в 105
+                { from: -30.4, to: -26.8, type: 'open' }  // Открытый проход в восточный коридор-тамбур выхода во двор
+            ], INNER_T);
+
+            // Внутренняя перегородка с двустворчатой дверью в проходе между 102 и 105 (X = 11.4, Z [-30.4..-26.8])
+            addWallLine(targetGroup, 11.4, -30.4, 11.4, -26.8, [
+                { from: -29.5, to: -27.7, type: 'door' }
+            ], INNER_T);
+
+            // Кабинет 105 (Z [-32.8..-30.4])
+            addWallLine(targetGroup, B3_X_CORR_E, -30.4, B3_X_EAST, -30.4, [], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -32.8, B3_X_EAST, -32.8, [], INNER_T);
+
+            // Большой зал 111 (Z [-42.0..-32.8]) и смежный 111А (Z [-44.2..-42.0])
+            addWallLine(targetGroup, B3_X_CORR_E, -42.0, B3_X_EAST, -42.0, [
+                { from: 9.6, to: 10.8, type: 'door' } // Внутренняя дверь между 111 и 111А
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -44.2, B3_X_EAST, -44.2, [], INNER_T);
+
+            // Помещение 112 и Г-образный тамбур восточного выхода (Z [-47.8..-44.2], X [7.2..14.0])
+            // Внутренний выступ тамбура в северо-западном углу 112 (X [7.2..11.2], Z [-47.8..-45.6])
+            addWallLine(targetGroup, B3_X_CORR_E, -45.6, 11.2, -45.6, [
+                { from: 7.8, to: 9.0, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 11.2, -47.8, 11.2, -45.6, [
+                { from: -47.3, to: -46.1, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -47.8, B3_X_EAST, -47.8, [], INNER_T);
+
+            // Кабинет 113А (Z [-50.0..-47.8]) и зал 113 (Z [-55.2..-50.0])
+            addWallLine(targetGroup, B3_X_CORR_E, -50.0, B3_X_EAST, -50.0, [
+                { from: 7.8, to: 9.0, type: 'door' } // Дверь между 113А и 113 у коридора
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -55.2, B3_X_EAST, -55.2, [], INNER_T);
+
+            // --- СЕВЕРНЫЙ ТОРЦЕВОЙ УЗЕЛ: ТАМБУР И ЗАЛЫ 117 (запад) / 116 (восток) (Z от -61.6 до -55.2) ---
+            // Тамбур в конце коридора (X [3.2..6.2], Z [-57.4..-55.2]) и стена между 117 и 116 (X = 6.2, Z [-61.6..-55.2])
+            addWallLine(targetGroup, 3.2, -57.4, 3.2, -55.8, [
+                { from: -57.1, to: -56.0, type: 'door' } // Дверь из тамбура налево в 117
+            ], INNER_T);
+            addWallLine(targetGroup, 3.2, -57.4, 6.2, -57.4, [
+                { from: 3.6, to: 4.8, type: 'door' } // Южная/северная дверь тамбура в 117
+            ], INNER_T);
+            addWallLine(targetGroup, 4.6, -55.2, 7.2, -55.2, [
+                { from: 5.0, to: 6.8, type: 'door' } // Двустворчатая дверь из коридора в северный тамбур
+            ], INNER_T);
+            addWallLine(targetGroup, 6.2, B3_Z_NORTH, 6.2, -55.2, [
+                { from: -57.1, to: -55.7, type: 'door' } // Двустворчатая/широкая дверь из тамбура направо в 116
+            ], INNER_T);
+
+            // 3D-плашки помещений 1-го этажа Корпуса 3 (buildingId = 3)
+            addRoomLabel(targetGroup, 1, '103', 3.2, -20.5, false, false, 3, 1.05);
+            addRoomLabel(targetGroup, 1, '104', 10.6, -23.2, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '102', 10.6, -25.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '105', 10.6, -31.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '111', 10.6, -37.4, false, false, 3, 1.05);
+            addRoomLabel(targetGroup, 1, '111А', 10.6, -43.1, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '112', 9.2, -44.9, true, false, 3, 0.85);
+            addRoomLabel(targetGroup, 1, '113А', 10.6, -48.9, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '113', 10.6, -52.6, false, false, 3, 1.0);
+            addRoomLabel(targetGroup, 1, '116', 10.1, -58.4, false, false, 3, 1.05);
+
+            addRoomLabel(targetGroup, 1, 'ЛК№2', 0.2, -28.6, true, false, 3, 0.88);
+            addRoomLabel(targetGroup, 1, '106', 1.5, -31.5, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '107', 1.5, -33.8, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '109', 2.7, -38.2, true, false, 3, 0.88);
+            addRoomLabel(targetGroup, 1, '108', -0.4, -38.8, true, false, 3, 0.78);
+            addRoomLabel(targetGroup, 1, 'С/У', 0.2, -40.7, true, false, 3, 0.78);
+            addRoomLabel(targetGroup, 1, 'С/У', 3.3, -41.9, true, false, 3, 0.76);
+            addRoomLabel(targetGroup, 1, 'С/У', 0.2, -43.1, true, false, 3, 0.78);
+            addRoomLabel(targetGroup, 1, 'ЛК№1', 1.5, -46.0, true, false, 3, 0.88);
+            addRoomLabel(targetGroup, 1, '114', 1.5, -50.6, false, false, 3, 1.0);
+            addRoomLabel(targetGroup, 1, '114А', 0.8, -54.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 1, '117', 1.5, -58.7, false, false, 3, 1.05);
+        }
+
+        /**
+         * КОРПУС 3 — ЭТАЖ 2 (Габариты: X [-1.6..14.0], Z [-61.6..-14.0], ВПЛОТНУЮ к Корпусу 1 без перемычки!)
+         * Точное совпадение с планом 2-го этажа:
+         * - На юге (Z [-19.8..-14.0]) коридор чуть шире (X [4.2..7.6]) со ступенями подъёма от дверей стыка и узкими торцевыми отсеками по бокам (Z [-15.2..-14.0])
+         * - На Z = -19.8 стены коридора делают аккуратную ступеньку внутрь до X [4.6..7.2] (поэтому 201 и 202 имеют характерный выступ у коридора)
+         * - Западный ряд: 201, 201А, ЛК №1 (Z [-30.4..-26.8]), 205, 205А, ЛК №2 (Z [-47.8..-44.2]), 207 (со ступенькой коридора до X = 4.2), 209 (до X = 4.9), 209А
+         * - Восточный ряд: 202, 202А, 204, 206, 208, 208А, восточный эркер со ступенями в середине (Z [-46.8..-44.2]), 210, 212А, и Г-образный зал 212 (продлевается на северном торце до X = 4.9!)
+         */
+        function buildBuilding3Floor2(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            // 1. Основная плита перекрытия 2-го этажа Корпуса 3 (вплотную к Корпусу 1 на Z = -14.0)
+            addFloorRect(targetGroup, B3_X_WEST, B3_Z_NORTH, B3_X_EAST, B3_Z_SOUTH, false);
+
+            // Восточный эркер с лестничным маршем посередине (между 208А и 210: X [14.0..15.6], Z [-46.8..-44.2])
+            addFloorRect(targetGroup, B3_X_EAST, -46.8, 15.6, -44.2, true);
+
+            // --- ВНЕШНИЙ ПЕРИМЕТР СТЕН КОРПУСА 3 (ЭТАЖ 2) ---
+            // Собственная южная торцевая стена Корпуса 3 (Z = -14.0) с двустворчатой дверью стыка X [4.9..6.9]
+            addWallLine(targetGroup, B3_X_WEST, B3_Z_SOUTH, B3_X_EAST, B3_Z_SOUTH, [
+                { from: 4.9, to: 6.9, type: 'door' }
+            ], OUTER_T);
+
+            // Северная торцевая стена Z = -61.6
+            addWallLine(targetGroup, B3_X_WEST, B3_Z_NORTH, B3_X_EAST, B3_Z_NORTH, [], OUTER_T);
+
+            // Западная внешняя стена X = -1.6
+            addWallLine(targetGroup, B3_X_WEST, B3_Z_NORTH, B3_X_WEST, B3_Z_SOUTH, [], OUTER_T);
+
+            // Восточная внешняя стена X = 14.0 (с открытым проёмом в восточный эркер Z [-46.8..-44.2])
+            addWallLine(targetGroup, B3_X_EAST, B3_Z_NORTH, B3_X_EAST, B3_Z_SOUTH, [
+                { from: -46.8, to: -44.2, type: 'open' }
+            ], OUTER_T);
+            // Внешние стены восточного эркера X [14.0..15.6], Z [-46.8..-44.2] (в торце X = 15.6 дверь в переход к Корпусу 4)
+            addWallLine(targetGroup, B3_X_EAST, -46.8, 15.6, -46.8, [], OUTER_T);
+            addWallLine(targetGroup, B3_X_EAST, -44.2, 15.6, -44.2, [], OUTER_T);
+            addWallLine(targetGroup, 15.6, -46.8, 15.6, -44.2, [
+                { from: -46.3, to: -44.7, type: 'door' }
+            ], OUTER_T);
+
+            // --- УЗЕЛ СТЫКА, УЗКИЕ ТОРЦЕВЫЕ ОТСЕКИ И СТУПЕНИ В ЮЖНОЙ ЧАСТИ (Z от -19.8 до -14.0) ---
+            // Узкие торцевые секции по бокам от входа (Z = -15.2, слева от коридора X [-1.6..4.2] и справа X [7.6..14.0])
+            addWallLine(targetGroup, B3_X_WEST, -15.2, 4.2, -15.2, [], INNER_T);
+            addWallLine(targetGroup, 7.6, -15.2, B3_X_EAST, -15.2, [], INNER_T);
+
+            // Расширенная южная часть коридора (X = 4.2 слева и X = 7.6 справа, от Z = -19.8 до Z = -14.0)
+            // с маленькими выступами-заплечиками на Z = -15.2 как на чертеже
+            addWallLine(targetGroup, 4.2, -19.8, 4.2, B3_Z_SOUTH, [], INNER_T);
+            addWallLine(targetGroup, 7.6, -19.8, 7.6, B3_Z_SOUTH, [], INNER_T);
+            addWallLine(targetGroup, 4.2, -15.2, 4.6, -15.2, [], INNER_T);
+            addWallLine(targetGroup, 7.2, -15.2, 7.6, -15.2, [], INNER_T);
+
+            // Ступеньки-изломы стен коридора на Z = -19.8 (переход от X [4.2..7.6] к основному коридору X [4.6..7.2])
+            addWallLine(targetGroup, 4.2, -19.8, B3_X_CORR_W, -19.8, [], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -19.8, 7.6, -19.8, [], INNER_T);
+
+            // Ступени подъёма в расширенной части коридора (X [4.2..7.6], Z [-18.2..-16.6])
+            const southCorrW = 7.6 - 4.2;
+            const southCorrCx = (4.2 + 7.6) / 2;
+            for (let i = 0; i < 5; i++) {
+                const sz = -18.2 + i * 0.30;
+                const heightRatio = 0.04 * (i + 1);
+                const geom = new THREE.BoxGeometry(southCorrW * 0.96, 1, 0.28);
+                registerDynamicStairStep(targetGroup, geom, southCorrCx, sz, heightRatio, 0);
+            }
+
+            // --- СТЕНЫ ЦЕНТРАЛЬНОГО КОРИДОРА 2-ГО ЭТАЖА ---
+            // 1) Западная стена коридора X = 4.6 на участке от Z = -47.8 до Z = -19.8 (вдоль 201, 201А, ЛК №1, 205, 205А, ЛК №2)
+            addWallLine(targetGroup, B3_X_CORR_W, B3_SHAFT_NORTH_Z1, B3_X_CORR_W, -19.8, [
+                { from: -46.9, to: -45.1, type: 'door' }, // Двустворчатая дверь в ЛК №2 (северная шахта)
+                { from: -43.5, to: -42.3, type: 'door' }, // Дверь в 205А
+                { from: -41.2, to: -39.6, type: 'door' }, // Двустворчатая дверь в 205 (северная)
+                { from: -32.6, to: -31.0, type: 'door' }, // Двустворчатая дверь в 205 (южная)
+                { from: -29.5, to: -27.7, type: 'door' }, // Двустворчатая дверь в ЛК №1 (южная шахта)
+                { from: -26.4, to: -24.8, type: 'door' }, // Двустворчатая дверь в 201А
+                { from: -23.8, to: -22.2, type: 'door' }  // Двустворчатая дверь в 201
+            ], INNER_T);
+
+            // 2) Ступенька коридора у каб. 207 (Z от -52.2 до -47.8: стена смещена на запад до X = 4.2, как на плане)
+            addWallLine(targetGroup, 4.2, B3_SHAFT_NORTH_Z1, B3_X_CORR_W, B3_SHAFT_NORTH_Z1, [], INNER_T);
+            addWallLine(targetGroup, 4.2, -52.2, 4.2, B3_SHAFT_NORTH_Z1, [
+                { from: -50.8, to: -49.2, type: 'door' } // Двустворчатая дверь в 207
+            ], INNER_T);
+
+            // 3) Ступенька коридора у каб. 209 и 209А (Z от -61.6 до -52.2: стена выступает до X = 4.9, смыкаясь с торцом зала 212)
+            addWallLine(targetGroup, 4.2, -52.2, 4.9, -52.2, [], INNER_T);
+            addWallLine(targetGroup, 4.9, B3_Z_NORTH, 4.9, -52.2, [
+                { from: -60.4, to: -59.2, type: 'door' }, // Дверь в 209А
+                { from: -54.0, to: -52.8, type: 'door' }  // Дверь в 209
+            ], INNER_T);
+
+            // 4) Восточная стена коридора X = 7.2 (от Z = -61.6 до Z = -19.8): вдоль 202, 202А, 204, 206, 208, 208А, эркера, 210, 212А, 212
+            // Внимание: зал 212 на севере шире остальных комнат и доходит на западе до X = 4.9 (закрывая торец коридора),
+            // поэтому стена вдоль коридора у 212 идет по Z = -53.8 (от X = 7.2) и далее по X = 7.2!
+            addWallLine(targetGroup, B3_X_CORR_E, -53.8, B3_X_CORR_E, -19.8, [
+                { from: -53.2, to: -52.0, type: 'door' }, // Дверь в 212А
+                { from: -50.4, to: -49.2, type: 'door' }, // Дверь в 210
+                { from: -46.4, to: -44.6, type: 'door' }, // Двустворчатая дверь в проход с восточным эркером
+                { from: -43.5, to: -42.3, type: 'door' }, // Дверь в 208А
+                { from: -40.8, to: -39.2, type: 'door' }, // Северная двустворчатая дверь в 208
+                { from: -34.2, to: -33.0, type: 'door' }, // Южная дверь в 208
+                { from: -31.4, to: -29.8, type: 'door' }, // Двустворчатая дверь в 206
+                { from: -29.0, to: -27.4, type: 'door' }, // Двустворчатая дверь в 204
+                { from: -26.4, to: -25.2, type: 'door' }, // Дверь в 202А
+                { from: -23.8, to: -22.6, type: 'door' }  // Дверь в 202
+            ], INNER_T);
+
+            // Продолжение восточной стены коридора вдоль зала 212 (X = 7.2, Z от -61.6 до -53.8, с двустворчатым входом в 212)
+            addWallLine(targetGroup, B3_X_CORR_E, B3_Z_NORTH, B3_X_CORR_E, -53.8, [
+                { from: -56.2, to: -54.4, type: 'door' } // Двустворчатая дверь из коридора в зал 212
+            ], INNER_T);
+            // Торцевая перегородка в северном конце коридора (соединяет X = 4.9 и X = 7.2 у Z = -61.6)
+            addWallLine(targetGroup, 4.9, B3_Z_NORTH, B3_X_CORR_E, B3_Z_NORTH, [], OUTER_T);
+
+            // --- ПОПЕРЕЧНЫЕ СТЕНЫ ЗАПАДНОГО РЯДА (X от -1.6 до 4.6): 201, 201А, ЛК №1, 205, 205А, ЛК №2, 207, 209, 209А ---
+            addWallLine(targetGroup, B3_X_WEST, -24.4, B3_X_CORR_W, -24.4, [
+                { from: -1.1, to: 0.1, type: 'door' } // Дверь между 201 и 201А у западной внешней стены
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_SOUTH_Z2, B3_X_CORR_W, B3_SHAFT_SOUTH_Z2, [], INNER_T); // Z = -26.8
+
+            // Южная шахта лестницы: ЛК №1 (X [-1.6..4.6], Z [-30.4..-26.8]) — ЕДИНАЯ С ЛК №2 1-ГО ЭТАЖА
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_SOUTH_Z1, B3_X_CORR_W, B3_SHAFT_SOUTH_Z1, [], INNER_T); // Z = -30.4
+            buildB3Staircase(targetGroup, B3_X_WEST + 0.1, B3_X_CORR_W - 0.1, B3_SHAFT_SOUTH_Z1 + 0.1, B3_SHAFT_SOUTH_Z2 - 0.1, false);
+
+            // Зал 205 (Z [-41.8..-30.4]) и узкий кабинет 205А (Z [-44.2..-41.8])
+            addWallLine(targetGroup, B3_X_WEST, -41.8, B3_X_CORR_W, -41.8, [
+                { from: 2.8, to: 4.0, type: 'door' } // Дверь между 205 и 205А у коридора
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_NORTH_Z2, B3_X_CORR_W, B3_SHAFT_NORTH_Z2, [], INNER_T); // Z = -44.2
+
+            // Северная шахта лестницы: ЛК №2 (X [-1.6..4.6], Z [-47.8..-44.2]) — ЕДИНАЯ С ЛК №1 1-ГО ЭТАЖА
+            addWallLine(targetGroup, B3_X_WEST, B3_SHAFT_NORTH_Z1, 4.2, B3_SHAFT_NORTH_Z1, [], INNER_T); // Z = -47.8
+            buildB3Staircase(targetGroup, B3_X_WEST + 0.1, B3_X_CORR_W - 0.1, B3_SHAFT_NORTH_Z1 + 0.1, B3_SHAFT_NORTH_Z2 - 0.1, false);
+
+            // Кабинет 207 (Z [-52.2..-47.8]), 209 (Z [-58.6..-52.2]) и 209А (Z [-61.6..-58.6])
+            addWallLine(targetGroup, B3_X_WEST, -52.2, 4.2, -52.2, [], INNER_T);
+            addWallLine(targetGroup, B3_X_WEST, -58.6, 4.9, -58.6, [
+                { from: 3.1, to: 4.3, type: 'door' } // Дверь между 209 и 209А
+            ], INNER_T);
+
+            // --- ПОПЕРЕЧНЫЕ СТЕНЫ ВОСТОЧНОГО РЯДА (X от 7.2 до 14.0): 202, 202А, 204, 206, 208, 208А, эркер, 210, 212А, 212 ---
+            addWallLine(targetGroup, B3_X_CORR_E, -24.4, B3_X_EAST, -24.4, [
+                { from: 7.8, to: 9.0, type: 'door' } // Дверь между 202 и 202А
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -26.8, B3_X_EAST, -26.8, [], INNER_T); // Между 202А и 204
+            addWallLine(targetGroup, B3_X_CORR_E, -29.2, B3_X_EAST, -29.2, [], INNER_T); // Между 204 и 206
+            addWallLine(targetGroup, B3_X_CORR_E, -31.8, B3_X_EAST, -31.8, [], INNER_T); // Между 206 и 208
+            addWallLine(targetGroup, B3_X_CORR_E, -41.8, B3_X_EAST, -41.8, [
+                { from: 7.8, to: 9.0, type: 'door' } // Дверь между 208 и 208А
+            ], INNER_T);
+            addWallLine(targetGroup, B3_X_CORR_E, -44.2, B3_X_EAST, -44.2, [], INNER_T); // Южная стена прохода с восточным эркером (-44.2)
+
+            // Ступени посередине прохода к восточному эркеру (X [11.8..13.2], Z [-46.8..-44.2]), как на чертеже
+            const bayDepthZ = 2.6 - 0.28;
+            const bayCz = -45.5;
+            for (let i = 0; i < 4; i++) {
+                const sx = 13.0 - i * 0.34;
+                const heightRatio = 0.045 * (i + 1);
+                const geom = new THREE.BoxGeometry(0.32, 1, bayDepthZ);
+                registerDynamicStairStep(targetGroup, geom, sx, bayCz, heightRatio, 0);
+            }
+
+            addWallLine(targetGroup, B3_X_CORR_E, -46.8, B3_X_EAST, -46.8, [], INNER_T); // Северная стена прохода с восточным эркером (-46.8)
+            addWallLine(targetGroup, B3_X_CORR_E, -51.4, B3_X_EAST, -51.4, [], INNER_T); // Между 210 и 212А
+            addWallLine(targetGroup, B3_X_CORR_E, -53.8, B3_X_EAST, -53.8, [
+                { from: 8.0, to: 9.2, type: 'door' } // Дверь из 212А в зал 212
+            ], INNER_T);
+
+            // 3D-плашки помещений 2-го этажа Корпуса 3 (buildingId = 3)
+            addRoomLabel(targetGroup, 2, '201', 1.5, -19.8, false, false, 3, 1.0);
+            addRoomLabel(targetGroup, 2, '201А', 1.5, -25.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, 'ЛК№1', 1.5, -28.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '205', 1.5, -36.1, false, false, 3, 1.05);
+            addRoomLabel(targetGroup, 2, '205А', 1.5, -43.0, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, 'ЛК№2', 1.5, -46.0, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '207', 1.3, -50.0, false, false, 3, 0.95);
+            addRoomLabel(targetGroup, 2, '209', 1.6, -55.4, false, false, 3, 1.0);
+            addRoomLabel(targetGroup, 2, '209А', 1.6, -60.1, true, false, 3, 0.90);
+
+            addRoomLabel(targetGroup, 2, '202', 10.6, -19.8, false, false, 3, 1.0);
+            addRoomLabel(targetGroup, 2, '202А', 10.6, -25.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '204', 10.6, -28.0, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '206', 10.6, -30.5, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '208', 10.6, -36.8, false, false, 3, 1.05);
+            addRoomLabel(targetGroup, 2, '208А', 10.6, -43.0, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '210', 10.6, -49.1, false, false, 3, 0.95);
+            addRoomLabel(targetGroup, 2, '212А', 10.6, -52.6, true, false, 3, 0.90);
+            addRoomLabel(targetGroup, 2, '212', 10.6, -57.7, false, false, 3, 1.05);
+        }
+
+        // Двухмаршевая лестница для Корпуса 4 (поддерживает продольную и поперечную ориентацию маршей)
+        function buildB4Staircase(targetGroup, x1, x2, z1, z2, alongZ = true) {
+            addFloorRect(targetGroup, x1, z1, x2, z2, true);
+            const steps = 9;
+
+            if (alongZ) {
+                const xMid = (x1 + x2) / 2;
+                const zStart = z1 + 0.65;
+                const zEnd = z2 - 0.65;
+                addWallLine(targetGroup, xMid, zStart, xMid, zEnd, [], 0.08);
+                const stepD = (zEnd - zStart) / steps;
+                const wFlight = (x2 - x1) / 2 - 0.14;
+
+                for (let m = 0; m < 2; m++) {
+                    const cx = m === 0 ? (x1 + xMid) / 2 : (xMid + x2) / 2;
+                    const dir = m === 0 ? 1 : -1;
+                    for (let i = 0; i < steps; i++) {
+                        const ratio = dir === 1 ? (i + 1) / steps : (steps - i) / steps;
+                        const heightRatio = ratio * 0.52;
+                        const sz = zStart + (i + 0.5) * stepD;
+                        const geom = new THREE.BoxGeometry(wFlight, 1, stepD * 0.94);
+                        registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, 0);
+                    }
+                }
+            } else {
+                const zMid = (z1 + z2) / 2;
+                const xStart = x1 + 0.75;
+                const xEnd = x2 - 0.75;
+                addWallLine(targetGroup, xStart, zMid, xEnd, zMid, [], 0.08);
+                const stepW = (xEnd - xStart) / steps;
+                const dFlight = (z2 - z1) / 2 - 0.14;
+
+                for (let m = 0; m < 2; m++) {
+                    const cz = m === 0 ? (z1 + zMid) / 2 : (zMid + z2) / 2;
+                    const dir = m === 0 ? -1 : 1;
+                    for (let i = 0; i < steps; i++) {
+                        const ratio = dir === 1 ? (i + 1) / steps : (steps - i) / steps;
+                        const heightRatio = ratio * 0.52;
+                        const sx = xStart + (i + 0.5) * stepW;
+                        const geom = new THREE.BoxGeometry(stepW * 0.94, 1, dFlight);
+                        registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, 0);
+                    }
+                }
+            }
+        }
+
+        // Открытое уличное крыльцо для 1-го этажа Корпуса 4 (без боковых стен)
+        function buildB4ExteriorPorch(targetGroup, x1, z1, x2, z2, stepDir = 'south') {
+            addFloorRect(targetGroup, x1, z1, x2, z2, true);
+            const steps = 5;
+            if (stepDir === 'south') {
+                const w = Math.abs(x2 - x1);
+                const cx = (x1 + x2) / 2;
+                const sDepth = 1.25 / steps;
+                for (let i = 0; i < steps; i++) {
+                    const sz = z2 + (i + 0.5) * sDepth;
+                    const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
+                    const geom = new THREE.BoxGeometry(w, 1, sDepth * 0.94);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                }
+            } else if (stepDir === 'east') {
+                const d = Math.abs(z2 - z1);
+                const cz = (z1 + z2) / 2;
+                const sWidth = 1.35 / steps;
+                for (let i = 0; i < steps; i++) {
+                    const sx = x2 + (i + 0.5) * sWidth;
+                    const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
+                    const geom = new THREE.BoxGeometry(sWidth * 0.94, 1, d);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14);
+                }
+            } else if (stepDir === 'west') {
+                const d = Math.abs(z2 - z1);
+                const cz = (z1 + z2) / 2;
+                const sWidth = 1.35 / steps;
+                for (let i = 0; i < steps; i++) {
+                    const sx = x1 - (i + 0.5) * sWidth;
+                    const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
+                    const geom = new THREE.BoxGeometry(sWidth * 0.94, 1, d);
+                    registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, -0.14);
+                }
+            } else if (stepDir === 'north') {
+                const w = Math.abs(x2 - x1);
+                const cx = (x1 + x2) / 2;
+                const sDepth = 1.25 / steps;
+                for (let i = 0; i < steps; i++) {
+                    const sz = z1 - (i + 0.5) * sDepth;
+                    const heightRatio = 0.03 + ((steps - i) / steps) * 0.12;
+                    const geom = new THREE.BoxGeometry(w, 1, sDepth * 0.94);
+                    registerDynamicStairStep(targetGroup, geom, cx, sz, heightRatio, -0.14);
+                }
+            }
+        }
+
+        /**
+         * КОРПУС 4 — ЭТАЖ 1 (БЕЗ надземных переходов!)
+         * Координаты синхронизированы со сдвигом Корпуса 4 вверх по X (+6.8 м относительно прежнего положения, S = +4.2),
+         * чтобы все 3 сквозные шахты лестниц (ЛК №1, ЛК №2, ЛК №3) на 100% совпадали со 2-м и 3-м этажами!
+         */
+        function buildBuilding4Floor1(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+            const S = 4.2; // Сдвиг по X для идеального совпадения со 2-м этажом (B4_X_WEST = 32.4)
+
+            // --- 1. ПЛИТЫ ПЕРЕКРЫТИЯ 1-ГО ЭТАЖА (БЕЗ ДЫРОК В ПОЛУ!) ---
+            addFloorRect(targetGroup, 28.2 + S, -59.6, 34.8 + S, -58.0, false); // Комната 10
+            addFloorRect(targetGroup, 29.2 + S, -58.0, 34.8 + S, -54.8, false); // Комнаты 9 и 8
+            addFloorRect(targetGroup, 30.2 + S, -54.8, 34.8 + S, -50.0, false); // Комнаты 7, 6, 5
+            addFloorRect(targetGroup, 28.2 + S, -50.0, 34.8 + S, -46.8, false); // Комната 4
+            addFloorRect(targetGroup, 34.8 + S, -61.2, 37.2 + S, -59.6, false); // Тамбур северного входа у комнаты 10
+
+            // Основной блок помещений 12–24, 18, 19 (X [39.0..61.4], Z [-58.4..-41.8])
+            addFloorRect(targetGroup, 34.8 + S, -58.4, 57.2 + S, -41.8, false);
+            // Выступ комнат 22 и 23 на севере (X [51.8..61.4], Z [-61.6..-58.4])
+            addFloorRect(targetGroup, 47.6 + S, -61.6, 57.2 + S, -58.4, false);
+
+            // Правая нижняя часть (104, 103, холл, блок раздевалок 11, 105, 3, 2, 1): X [32.4..45.6], Z [-46.8..-27.4]
+            addFloorRect(targetGroup, B4_X_WEST, -46.8, 45.6, B4_Z_SOUTH, false);
+
+            // Большой зал столовой 102 (X [42.4..64.4], Z [-41.8..-27.4]) — выпирает вверх дальше зала 24 (61.4)!
+            addFloorRect(targetGroup, 42.4, -41.8, 64.4, B4_Z_SOUTH, false);
+
+            // Выступающие лестничные клетки и уличные крыльца 1-го этажа:
+            // 1) ЛК №2 (X [27.8..32.4], Z [-49.8..-46.8]) + входной тамбур правее неё (X [29.2..32.4], Z [-46.8..-44.2])
+            addFloorRect(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z2, true);
+            addFloorRect(targetGroup, 29.2, B4_LK2_Z2, B4_X_WEST, -44.2, false);
+            buildB4ExteriorPorch(targetGroup, 28.8, -51.5, 31.4, B4_LK2_Z1, 'north');
+            buildB4ExteriorPorch(targetGroup, 27.6, -46.8, 29.2, -44.2, 'west');
+
+            // 2) ЛК №3 (X [61.4..69.0], Z [-49.8..-45.4]) + верхний подход к столовой 102 (X [61.4..64.4], Z [-45.4..-41.8])
+            addFloorRect(targetGroup, B4_LK3_X1, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, true);
+            addFloorRect(targetGroup, B4_LK3_X1, B4_LK3_Z2, 64.4, -41.8, false);
+
+            // 3) Правый нижний узел (Z = -27.4):
+            // Входной тамбур с крыльцом (X [36.2..38.8], между 103 и ЛК №1), а ВЫШЕ него — сквозная шахта ЛК №1 (X [38.8..42.4], Z [-31.2..-24.4])!
+            addFloorRect(targetGroup, 36.2, -29.0, B4_LK1_X1, -26.2, false);
+            buildB4ExteriorPorch(targetGroup, 36.2, -26.2, B4_LK1_X1, -24.4, 'south');
+            addFloorRect(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, true);
+
+            // --- 2. ОПОРНЫЕ СТОЛБЫ (КОЛОННЫ) ПОД НАВИСАЮЩЕЙ ЧАСТЬЮ СПОРТЗАЛА 206 (С ВОСТОКА И СЕВЕРА) ---
+            [34.7, 38.2, 42.7, 47.2, 50.7].forEach(cx => {
+                addSquareColumn(targetGroup, cx, -61.2, 0.42);
+            });
+            [-61.2, -57.5, -53.8, -50.2].forEach(cz => {
+                addSquareColumn(targetGroup, 65.6, cz, 0.42);
+            });
+
+            // --- 3. СТЕНЫ ЛЕСТНИЧНЫХ КЛЕТОК И ВНЕШНЕГО ПЕРИМЕТРА 1-ГО ЭТАЖА ---
+            // Шахта ЛК №2 (X [27.8..32.4], Z [-49.8..-46.8])
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z1, [
+                { from: 29.4, to: 30.8, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X1, B4_LK2_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z2, B4_LK2_X2, B4_LK2_Z2, [
+                { from: 30.4, to: 31.8, type: 'door' }
+            ], OUTER_T);
+            buildB4Staircase(targetGroup, B4_LK2_X1 + 0.1, B4_LK2_X2 - 0.1, B4_LK2_Z1 + 0.1, B4_LK2_Z2 - 0.1, false);
+
+            // Входной тамбур правее ЛК №2 (X [29.2..32.4], Z [-46.8..-44.2])
+            addWallLine(targetGroup, 29.2, -46.8, 29.2, -44.2, [
+                { from: -46.1, to: -44.9, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, 29.2, -44.2, B4_X_WEST, -44.2, [], OUTER_T);
+
+            // Шахта ЛК №3 (X [61.4..69.0], Z [-49.8..-45.4]) — единая со 2-м и 3-м этажами!
+            addWallLine(targetGroup, B4_LK3_X1, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z1, [], OUTER_T);
+            addWallLine(targetGroup, 64.4, B4_LK3_Z2, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK3_X2, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, [
+                { from: -48.4, to: -46.8, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, 64.4, B4_LK3_Z2, 64.4, -41.8, [], OUTER_T);
+            buildB4Staircase(targetGroup, B4_LK3_X1 + 0.1, B4_X_EAST - 0.1, B4_LK3_Z1 + 0.1, B4_LK3_Z2 - 0.1, false);
+
+            // Шахта ЛК №1 (X [38.8..42.4], Z [-31.2..-24.4]) — единая со 2-м и 3-м этажами!
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X1, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X2, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z2, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z1, [
+                { from: 39.8, to: 41.4, type: 'door' }
+            ], INNER_T);
+            buildB4Staircase(targetGroup, B4_LK1_X1 + 0.1, B4_LK1_X2 - 0.1, B4_LK1_Z1 + 0.1, B4_LK1_Z2 - 0.1, true);
+
+            // Входной тамбур с двойными дверями НИЖЕ ЛК №1 (X [36.2..38.8], Z [-29.0..-26.2], под переходом 2-го этажа!)
+            addWallLine(targetGroup, 36.2, -29.0, B4_LK1_X1, -29.0, [
+                { from: 36.8, to: 38.2, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 36.2, -26.2, B4_LK1_X1, -26.2, [
+                { from: 36.8, to: 38.2, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, 36.2, -29.0, 36.2, -26.2, [], OUTER_T);
+
+            // Ступенчатый нижний фасад вдоль комнат 104, 103 и 4–10:
+            addWallLine(targetGroup, B4_X_WEST, -50.0, B4_X_WEST, B4_Z_SOUTH, [
+                { from: B4_LK2_Z1, to: B4_LK2_Z2, type: 'open' },
+                { from: -46.2, to: -44.8, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, B4_X_WEST, -50.0, 30.2 + S, -50.0, [], OUTER_T);
+            addWallLine(targetGroup, 30.2 + S, -54.8, 30.2 + S, -50.0, [], OUTER_T);
+            addWallLine(targetGroup, 29.2 + S, -54.8, 30.2 + S, -54.8, [], OUTER_T);
+            addWallLine(targetGroup, 29.2 + S, -58.0, 29.2 + S, -54.8, [], OUTER_T);
+            addWallLine(targetGroup, B4_X_WEST, -58.0, 29.2 + S, -58.0, [], OUTER_T);
+            addWallLine(targetGroup, B4_X_WEST, -59.6, B4_X_WEST, -58.0, [], OUTER_T);
+
+            // Левый (северный) внешний контур 1-го этажа:
+            addWallLine(targetGroup, B4_X_WEST, -59.6, 34.8 + S, -59.6, [], OUTER_T);
+            addWallLine(targetGroup, 34.8 + S, -61.2, 34.8 + S, -59.6, [], OUTER_T);
+            addWallLine(targetGroup, 34.8 + S, -61.2, 37.2 + S, -61.2, [
+                { from: 35.4 + S, to: 36.6 + S, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, 37.2 + S, -61.2, 37.2 + S, -58.4, [], OUTER_T);
+            addWallLine(targetGroup, 37.2 + S, -58.4, 47.6 + S, -58.4, [
+                { from: 38.8 + S, to: 40.2 + S, type: 'door' },
+                { from: 41.8 + S, to: 43.2 + S, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, 47.6 + S, -61.6, 47.6 + S, -58.4, [], OUTER_T);
+            addWallLine(targetGroup, 47.6 + S, -61.6, 57.2 + S, -61.6, [], OUTER_T);
+
+            // Верхняя стена блока 23, 24, 19, 18 (X = 61.4, Z [-61.6..-41.8])
+            addWallLine(targetGroup, 57.2 + S, -61.6, 57.2 + S, -41.8, [
+                { from: -49.0, to: -46.2, type: 'open' },
+                { from: -44.2, to: -42.8, type: 'door' }
+            ], OUTER_T);
+
+            // Выступающий верхний контур столовой 102 (X = 64.4, Z [-41.8..-27.4]) с дверью к ЛК №3
+            addWallLine(targetGroup, 61.4, -41.8, 64.4, -41.8, [
+                { from: 62.0, to: 63.6, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, 64.4, -41.8, 64.4, B4_Z_SOUTH, [], OUTER_T);
+
+            // Правая внешняя стена Z = -27.4
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_SOUTH, 64.4, B4_Z_SOUTH, [
+                { from: 36.2, to: B4_LK1_X2, type: 'open' }
+            ], OUTER_T);
+
+            // --- 4. ВНУТРЕННИЕ ПЕРЕГОРОДКИ 1-ГО ЭТАЖА КОРПУСА 4 ---
+            addWallLine(targetGroup, B4_X_WEST, -44.2, 36.2, -44.2, [], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -35.6, 36.2, -35.6, [], INNER_T);
+            addWallLine(targetGroup, 36.2, -44.2, 36.2, -29.0, [
+                { from: -38.4, to: -36.8, type: 'door' },
+                { from: -33.6, to: -32.0, type: 'door' }
+            ], INNER_T);
+
+            // Столовая 102 (X [42.4..64.4], Z [-41.8..-27.4])
+            addWallLine(targetGroup, 42.4, -41.8, 61.4, -41.8, [
+                { from: 56.2, to: 57.8, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 42.4, -41.8, 42.4, B4_Z_SOUTH, [
+                { from: -38.8, to: -37.0, type: 'door' },
+                { from: -34.2, to: -32.4, type: 'door' }
+            ], INNER_T);
+
+            // Центральный блок раздевалок и санузлов перед столовой: 11, 105, 3, 2, 1, 1 (X [37.4..42.4], Z [-46.8..-35.6])
+            addWallLine(targetGroup, 37.4, -46.8, 42.4, -46.8, [
+                { from: 41.0, to: 42.1, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 37.4, -35.6, 42.4, -35.6, [
+                { from: 38.0, to: 39.4, type: 'open' },
+                { from: 40.4, to: 41.8, type: 'open' }
+            ], INNER_T);
+            addWallLine(targetGroup, 37.4, -46.8, 37.4, -35.6, [
+                { from: -43.6, to: -42.4, type: 'door' },
+                { from: -41.2, to: -40.0, type: 'door' },
+                { from: -39.2, to: -38.0, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 42.4, -46.8, 42.4, -41.8, [
+                { from: -45.8, to: -44.6, type: 'door' },
+                { from: -43.4, to: -42.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 37.4, -44.0, 42.4, -44.0, [
+                { from: 41.0, to: 42.1, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 39.8, -44.0, 39.8, -41.4, [], INNER_T);
+            addWallLine(targetGroup, 40.8, -46.8, 40.8, -44.0, [
+                { from: -45.8, to: -44.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 37.4, -41.4, 42.4, -41.4, [], INNER_T);
+            addWallLine(targetGroup, 37.4, -39.6, 42.4, -39.6, [], INNER_T);
+            addWallLine(targetGroup, 37.4, -37.8, 42.4, -37.8, [], INNER_T);
+            addWallLine(targetGroup, 40.0, -41.4, 40.0, -37.8, [
+                { from: -40.9, to: -40.0, type: 'door' },
+                { from: -39.1, to: -38.2, type: 'door' }
+            ], 0.12);
+            addWallLine(targetGroup, 40.0, -40.5, 42.4, -40.5, [], 0.12);
+            addWallLine(targetGroup, 40.0, -38.7, 42.4, -38.7, [], 0.12);
+
+            // Отдельно стоящий в холле кабинет 12
+            addWallLine(targetGroup, 34.6 + S, -51.8, 37.6 + S, -51.8, [], INNER_T);
+            addWallLine(targetGroup, 34.6 + S, -47.4, 37.6 + S, -47.4, [], INNER_T);
+            addWallLine(targetGroup, 34.6 + S, -51.8, 34.6 + S, -47.4, [
+                { from: -50.8, to: -49.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 37.6 + S, -51.8, 37.6 + S, -47.4, [], INNER_T);
+
+            // Помещение 14 вдоль левой стены столовой 102 + холл и комн. 18
+            addWallLine(targetGroup, 42.4, -44.6, 49.2 + S, -44.6, [], INNER_T);
+            addWallLine(targetGroup, 49.2 + S, -44.6, 49.2 + S, -41.8, [
+                { from: -43.8, to: -42.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 51.4 + S, -44.6, 57.2 + S, -44.6, [], INNER_T);
+            addWallLine(targetGroup, 51.4 + S, -44.6, 51.4 + S, -41.8, [
+                { from: -43.8, to: -42.6, type: 'door' }
+            ], INNER_T);
+
+            // Ряд кабинетов 15, 16, 17 и комната 19
+            addWallLine(targetGroup, 38.8 + S, -49.8, 49.2 + S, -49.8, [
+                { from: 40.0 + S, to: 41.2 + S, type: 'door' },
+                { from: 43.4 + S, to: 44.6 + S, type: 'door' },
+                { from: 46.8 + S, to: 48.0 + S, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 38.8 + S, -49.8, 38.8 + S, -44.6, [], INNER_T);
+            addWallLine(targetGroup, 42.3 + S, -49.8, 42.3 + S, -44.6, [], INNER_T);
+            addWallLine(targetGroup, 45.8 + S, -49.8, 45.8 + S, -44.6, [], INNER_T);
+            addWallLine(targetGroup, 49.2 + S, -49.8, 49.2 + S, -44.6, [
+                { from: -46.4, to: -45.2, type: 'door' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 49.2 + S, -48.6, 57.2 + S, -48.6, [
+                { from: 49.6 + S, to: 50.8 + S, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 51.0 + S, -48.6, 51.0 + S, -44.6, [
+                { from: -47.0, to: -45.8, type: 'door' }
+            ], INNER_T);
+
+            // Ряд комнат 4, 5, 6, 7, 8, 9, 10 вдоль нижней стороны
+            addWallLine(targetGroup, B4_X_WEST, -46.8, 34.8 + S, -46.8, [
+                { from: 26.0 + S, to: 27.2 + S, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 34.8 + S, -59.6, 34.8 + S, -46.8, [
+                { from: -59.0, to: -57.8, type: 'door' },
+                { from: -56.8, to: -55.6, type: 'door' },
+                { from: -54.4, to: -53.4, type: 'door' },
+                { from: -52.8, to: -51.8, type: 'door' },
+                { from: -51.2, to: -50.2, type: 'door' },
+                { from: -49.0, to: -47.8, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 30.2 + S, -50.0, 34.8 + S, -50.0, [], INNER_T);
+            addWallLine(targetGroup, 30.2 + S, -51.6, 34.8 + S, -51.6, [], INNER_T);
+            addWallLine(targetGroup, 30.2 + S, -53.2, 34.8 + S, -53.2, [], INNER_T);
+            addWallLine(targetGroup, 29.2 + S, -54.8, 34.8 + S, -54.8, [], INNER_T);
+            addWallLine(targetGroup, 29.2 + S, -56.4, 34.8 + S, -56.4, [], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -58.0, 34.8 + S, -58.0, [], INNER_T);
+
+            // Левый блок: комната 13, проход, комнаты 20 и 21, секции 22 и 23, зал 24
+            addWallLine(targetGroup, 37.2 + S, -58.4, 37.2 + S, -53.4, [
+                { from: -58.0, to: -56.8, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 37.2 + S, -57.4, 40.8 + S, -57.4, [
+                { from: 38.4 + S, to: 39.6 + S, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 37.2 + S, -54.6, 40.8 + S, -54.6, [], INNER_T);
+            addWallLine(targetGroup, 40.8 + S, -58.4, 40.8 + S, -53.4, [], INNER_T);
+
+            addWallLine(targetGroup, 43.2 + S, -58.4, 43.2 + S, -53.4, [
+                { from: -56.8, to: -55.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 45.4 + S, -58.4, 45.4 + S, -53.4, [], INNER_T);
+            addWallLine(targetGroup, 47.6 + S, -58.4, 47.6 + S, -53.4, [
+                { from: -57.8, to: -56.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 43.2 + S, -53.4, 47.6 + S, -53.4, [
+                { from: 43.8 + S, to: 44.8 + S, type: 'open' },
+                { from: 46.0 + S, to: 47.0 + S, type: 'open' }
+            ], INNER_T);
+
+            addWallLine(targetGroup, 47.6 + S, -58.4, 57.2 + S, -58.4, [
+                { from: 51.0 + S, to: 52.4 + S, type: 'door' },
+                { from: 55.2 + S, to: 56.6 + S, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 54.4 + S, -61.6, 54.4 + S, -58.4, [], INNER_T);
+
+            // 3D-плашки помещений 1-го этажа Корпуса 4 (buildingId = 4)
+            addRoomLabel(targetGroup, 1, 'ЛК№2', 30.1, -48.3, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, 'ЛК№3', 64.8, -47.6, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, 'ЛК№1', 40.6, -27.8, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 1, '104', 34.3, -39.9, false, false, 4, 0.95);
+            addRoomLabel(targetGroup, 1, '103', 34.3, -31.5, false, false, 4, 0.95);
+            addRoomLabel(targetGroup, 1, '102', 53.4, -34.4, false, false, 4, 1.2);
+            addRoomLabel(targetGroup, 1, '1', 39.9, -36.7, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '1', 38.7, -38.7, true, false, 4, 0.78);
+            addRoomLabel(targetGroup, 1, '2', 38.7, -40.5, true, false, 4, 0.78);
+            addRoomLabel(targetGroup, 1, '105', 38.6, -42.7, true, false, 4, 0.78);
+            addRoomLabel(targetGroup, 1, '3', 41.1, -42.7, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '11', 39.1, -45.4, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '12', 40.3, -49.6, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '14', 47.9, -43.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '15', 44.7, -47.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '16', 48.2, -47.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '17', 51.7, -47.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '18', 58.5, -43.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '19', 58.3, -46.6, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '4', 35.7, -48.4, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '5', 36.7, -50.8, true, false, 4, 0.76);
+            addRoomLabel(targetGroup, 1, '6', 36.7, -52.4, true, false, 4, 0.76);
+            addRoomLabel(targetGroup, 1, '7', 36.7, -54.0, true, false, 4, 0.76);
+            addRoomLabel(targetGroup, 1, '8', 36.2, -55.6, true, false, 4, 0.76);
+            addRoomLabel(targetGroup, 1, '9', 36.2, -57.2, true, false, 4, 0.76);
+            addRoomLabel(targetGroup, 1, '10', 35.7, -58.8, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '13', 43.2, -56.0, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '20', 48.5, -55.9, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '21', 50.7, -55.9, true, false, 4, 0.82);
+            addRoomLabel(targetGroup, 1, '24', 56.6, -54.0, false, false, 4, 1.1);
+            addRoomLabel(targetGroup, 1, '22', 55.2, -60.0, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 1, '23', 60.0, -60.0, true, false, 4, 0.82);
+        }
+
+        /**
+         * КОРПУС 4 — ЭТАЖ 2 + ДВА ПРЯМЫХ НАДЗЕМНЫХ ПЕРЕХОДА (К КОРПУСУ 3 И К КОРПУСУ 2):
+         * Исправлено:
+         * 1) Удлинён переход К3 ↔ К4 (X [15.6..32.4], Z [-46.8..-44.2]), за счёт чего Корпус 4 отодвинулся вверх по X (B4_X_WEST = 32.4).
+         * 2) Теперь переход К4 ↔ К2 (X [36.2..38.8]) выходит СТРОГО МЕЖДУ углом каб. 201 (X [32.4..36.2]) и лестницей ЛК №1 (X [38.8..42.4])!
+         * 3) Дальняя лестница ЛК №3 (X [61.4..69.0], Z [-49.8..-45.4]) выровнена в одну линию со стеной зала 206 (Z = -49.8) и лентой 210–212 (Z = -45.4), с двумя дверями в тамбур перед ней.
+         * 4) Исправлен узел дверей между С/У и блоком 207/208 (аккуратный тамбур без перехлёста стен).
+         */
+        function buildBuilding4Floor2(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            // 1. Основная плита перекрытия 2-го этажа Корпуса 4 (X [32.4..66.0], Z [-61.6..-27.4])
+            addFloorRect(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_EAST, B4_Z_SOUTH, false);
+
+            // Выступающие лестничные клетки Корпуса 4:
+            addFloorRect(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z2, true);
+            addFloorRect(targetGroup, B4_LK3_X1, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, true);
+            addFloorRect(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, true);
+
+            // --- ДВА ПРЯМЫХ НАДЗЕМНЫХ КОРИДОРА-ПЕРЕХОДА 2-ГО ЭТАЖА ---
+            // 1) УДЛИНЁННЫЙ ПРЯМОЙ ПЕРЕХОД К3 ↔ К4 (X [15.6..32.4], Z [-46.8..-44.2]) — примыкает вплотную к ЛК №2 (X [27.8..32.4], Z [-49.8..-46.8])
+            addFloorRect(targetGroup, 15.6, -46.8, B4_X_WEST, -44.2, false);
+            addWallLine(targetGroup, 15.6, -46.8, B4_LK2_X1, -46.8, [], OUTER_T);
+            addWallLine(targetGroup, 15.6, -44.2, B4_X_WEST, -44.2, [], OUTER_T);
+
+            // 2) ПРЯМОЙ ПЕРЕХОД К4 ↔ К2 (X [36.2..38.8], Z [-27.4..-13.8]):
+            // Расположен СТРОГО МЕЖДУ углом каб. 201 (X [32.4..36.2]) и лестницей ЛК №1 (X [38.8..42.4]), как на плане!
+            addFloorRect(targetGroup, 36.2, B4_Z_SOUTH, B4_LK1_X1, B2_Z_TOP, false);
+            addWallLine(targetGroup, 36.2, B4_Z_SOUTH, 36.2, B2_Z_TOP, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z2, B4_LK1_X1, B2_Z_TOP, [], OUTER_T);
+            for (let i = 0; i < 4; i++) {
+                const sz = -27.0 + i * 0.36;
+                const heightRatio = 0.04 * (4 - i);
+                const geom = new THREE.BoxGeometry(2.36, 1, 0.32);
+                registerDynamicStairStep(targetGroup, geom, 37.5, sz, heightRatio, 0);
+            }
+
+            // --- ВНЕШНИЙ ПЕРИМЕТР И ЛЕСТНИЧНЫЕ КЛЕТКИ 2-ГО ЭТАЖА КОРПУСА 4 ---
+            // Шахта ЛК №2 (X [27.8..32.4], Z [-49.8..-46.8]) — со сплошной общей стенкой Z = -46.8 и дверью у входа
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z1, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X1, B4_LK2_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z2, B4_LK2_X2, B4_LK2_Z2, [
+                { from: 30.9, to: 32.0, type: 'door' }
+            ], INNER_T);
+            buildB4Staircase(targetGroup, B4_LK2_X1 + 0.1, B4_LK2_X2 - 0.1, B4_LK2_Z1 + 0.1, B4_LK2_Z2 - 0.1, false);
+
+            // Шахта дальней лестницы ЛК №3 (X [61.4..69.0], Z [-49.8..-45.4]):
+            // Левая стена Z = -49.8 идёт ровно в створе со стеной спортзала 206, правая Z = -45.4 — в створе с рядом 210–212!
+            addWallLine(targetGroup, B4_X_EAST, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z1, [], OUTER_T);
+            addWallLine(targetGroup, B4_X_EAST, B4_LK3_Z2, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK3_X2, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
+            // Внутренние стенки предбанника перед ЛК №3 (X [61.4..63.2], Z [-49.8..-45.4]) с двумя дверями (слева и справа), как на плане
+            addWallLine(targetGroup, B4_LK3_X1, B4_LK3_Z1, B4_X_EAST, B4_LK3_Z1, [
+                { from: 61.7, to: 62.9, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, B4_LK3_X1, B4_LK3_Z2, B4_X_EAST, B4_LK3_Z2, [
+                { from: 61.7, to: 62.9, type: 'door' }
+            ], INNER_T);
+            buildB4Staircase(targetGroup, 63.2, B4_LK3_X2 - 0.15, B4_LK3_Z1 + 0.1, B4_LK3_Z2 - 0.1, false);
+
+            // Шахта ЛК №1 (X [38.8..42.4], Z [-31.2..-24.4]) — расположена ВЫШЕ перехода К4↔К2 (X [36.2..38.8]), 100% совпадает с 1 и 3 этажами!
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X1, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X2, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z2, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z1, [
+                { from: 39.8, to: 41.4, type: 'door' }
+            ], INNER_T);
+            buildB4Staircase(targetGroup, B4_LK1_X1 + 0.1, B4_LK1_X2 - 0.1, B4_LK1_Z1 + 0.1, B4_LK1_Z2 - 0.1, true);
+
+            // Нижняя внешняя стена Корпуса 4 (X = 32.4):
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_WEST, B4_Z_SOUTH, [
+                { from: -49.2, to: -47.4, type: 'door' }, // Двустворчатая дверь из ЛК №2 в холл
+                { from: -46.4, to: -44.6, type: 'door' }  // Двустворчатая дверь из Перехода в холл
+            ], OUTER_T);
+
+            // Верхняя внешняя стена Корпуса 4 (X = 66.0) с проёмом в ЛК №3 (Z [-49.8..-45.4])
+            addWallLine(targetGroup, B4_X_EAST, B4_Z_NORTH, B4_X_EAST, B4_Z_SOUTH, [
+                { from: B4_LK3_Z1, to: B4_LK3_Z2, type: 'open' }
+            ], OUTER_T);
+
+            // Левая внешняя стена зала 206 (Z = -61.6)
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_EAST, B4_Z_NORTH, [], OUTER_T);
+
+            // Правая внешняя стена Корпуса 4 (Z = -27.4): двустворчатая дверь в переход К4↔К2 (X [36.5..38.5]) МЕЖДУ каб. 201 и ЛК №1 (X [38.8..42.4])!
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_SOUTH, B4_X_EAST, B4_Z_SOUTH, [
+                { from: 36.5, to: 38.5, type: 'door' },
+                { from: B4_LK1_X1, to: B4_LK1_X2, type: 'open' }
+            ], OUTER_T);
+
+            // --- ВНУТРЕННЯЯ ПЛАНИРОВКА 2-ГО ЭТАЖА КОРПУСА 4 ---
+            // 1) Стена между залом 206 и центральным холлом / помещениями (Z = -49.8, от X = 32.4 до X = 61.4)
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_MID_N, B4_LK3_X1, B4_Z_MID_N, [
+                { from: 33.4, to: 35.4, type: 'door' }, // Первая (нижняя) двустворчатая дверь из холла в зал 206
+                { from: 36.6, to: 38.6, type: 'door' }, // Вторая (верхняя) двустворчатая дверь из холла в зал 206
+                { from: 45.6, to: 47.6, type: 'door' }  // Двустворчатая дверь из Служеб. пом. в зал 206
+            ], INNER_T);
+
+            // Колонны по периметру зала 206
+            [36.6, 41.2, 45.8, 50.4, 55.0, 59.6].forEach(cx => {
+                addSquareColumn(targetGroup, cx, B4_Z_NORTH + 0.25, 0.38);
+            });
+            [-57.8, -53.8].forEach(cz => {
+                addSquareColumn(targetGroup, B4_X_WEST + 0.25, cz, 0.38);
+                addSquareColumn(targetGroup, B4_X_EAST - 0.25, cz, 0.38);
+            });
+
+            // 2) Блок двух С/У (X [39.8..43.2], Z [-49.8..-45.4]):
+            // Симметричные входы снизу (на X = 39.8) и две кабинки внутри с боковыми дверями, правая стена С/У (Z = -45.4) глухая
+            addFloorRect(targetGroup, 39.8, B4_Z_MID_N, 43.2, B4_Z_MID_S, true);
+            addWallLine(targetGroup, 39.8, B4_Z_MID_N, 39.8, B4_Z_MID_S, [
+                { from: -49.6, to: -48.6, type: 'door' },
+                { from: -46.6, to: -45.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 39.8, B4_Z_MID_S, 43.2, B4_Z_MID_S, [], INNER_T);
+            addWallLine(targetGroup, 43.2, B4_Z_MID_N, 43.2, B4_Z_MID_S, [], INNER_T);
+            addWallLine(targetGroup, 39.8, -47.6, 43.2, -47.6, [], 0.14);
+            addWallLine(targetGroup, 41.8, -48.5, 41.8, -46.7, [], 0.12);
+            addWallLine(targetGroup, 39.8, -48.5, 41.8, -48.5, [
+                { from: 40.2, to: 41.4, type: 'door' }
+            ], 0.12);
+            addWallLine(targetGroup, 39.8, -46.7, 41.8, -46.7, [
+                { from: 40.2, to: 41.4, type: 'door' }
+            ], 0.12);
+
+            // 3) Остальная центральная лента (Z [-49.8..-45.4], X от 43.2 до 61.4):
+            // Служеб. пом. (X [43.2..49.2]), 210 (X [49.2..53.2]), 211 (X [53.2..57.3]), 212 (X [57.3..61.4])
+            addWallLine(targetGroup, 43.2, B4_Z_MID_S, B4_LK3_X1, B4_Z_MID_S, [
+                { from: 51.6, to: 52.8, type: 'door' }, // Дверь в 210
+                { from: 53.6, to: 54.6, type: 'door' }, // Дверь в тамбур 211
+                { from: 60.0, to: 61.0, type: 'door' }  // Дверь в тамбур 212
+            ], INNER_T);
+            [49.2, 53.2, 57.3, B4_LK3_X1].forEach(xWall => {
+                addWallLine(targetGroup, xWall, B4_Z_MID_N, xWall, B4_Z_MID_S, [], INNER_T);
+            });
+            addWallLine(targetGroup, 54.8, -46.6, 59.8, -46.6, [
+                { from: 55.4, to: 56.6, type: 'door' },
+                { from: 58.0, to: 59.2, type: 'door' }
+            ], 0.12);
+            addWallLine(targetGroup, 54.8, -46.6, 54.8, B4_Z_MID_S, [], 0.12);
+            addWallLine(targetGroup, 59.8, -46.6, 59.8, B4_Z_MID_S, [], 0.12);
+
+            // 4) Блок 207, 208, 209, 203 (X [39.2..51.0], Z [-43.6..-37.2]) и дверь отсечки коридора:
+            // На плане дверь отсечки коридора стоит на X = 42.2 (Z [-45.4..-43.6]) между углом С/У и входом в тамбур 207/208, не перекрывая двери!
+            const BX_BOT = 39.2, BX_207_208 = 42.8, BX_208_TOP = 46.6, BX_TOP = 51.0;
+            const BZ_LEFT = -43.6, BZ_VEST = -41.8, BZ_CORR_END = -39.6, BZ_MID_209_203 = -40.4, BZ_RIGHT = -37.2;
+
+            // Перегородка с дверью в коридоре между С/У и верхним углом тамбура 207/208 (X = 42.2, Z [-45.4..-43.6])
+            addWallLine(targetGroup, 42.2, B4_Z_MID_S, 42.2, BZ_LEFT, [
+                { from: -45.1, to: -43.9, type: 'door' }
+            ], INNER_T);
+
+            // Нижняя глухая стена 207 (X = 39.2, Z [-43.6..-37.2]) и правая стена всего блока (Z = -37.2, X [39.2..51.0])
+            addWallLine(targetGroup, BX_BOT, BZ_LEFT, BX_BOT, BZ_RIGHT, [], INNER_T);
+            addWallLine(targetGroup, BX_BOT, BZ_RIGHT, BX_TOP, BZ_RIGHT, [
+                { from: 48.0, to: 49.4, type: 'door' } // Вход в 203 справа
+            ], INNER_T);
+
+            // Левая стена блока вдоль коридора (Z = -43.6): глухая у 207, открытая в нише [41.0..42.2], глухая у 208, с дверью в 209
+            addWallLine(targetGroup, BX_BOT, BZ_LEFT, 41.0, BZ_LEFT, [], INNER_T);
+            addWallLine(targetGroup, 44.2, BZ_LEFT, BX_TOP, BZ_LEFT, [
+                { from: 48.0, to: 49.4, type: 'door' } // Вход в 209 слева из коридора
+            ], INNER_T);
+
+            // Входной предбанник в 207 и 208 (X [41.0..44.2], Z [-43.6..-41.8]):
+            // Слева (на Z = -43.6) свободный вход из холла, а на нижней (X = 41.0) и верхней (X = 44.2) стенках — двери в 207 и 208, плюс входы в 2 узких коридорчика!
+            addWallLine(targetGroup, 41.0, BZ_LEFT, 41.0, BZ_VEST, [
+                { from: -43.3, to: -42.1, type: 'door' }
+            ], 0.14);
+            addWallLine(targetGroup, 44.2, BZ_LEFT, 44.2, BZ_VEST, [
+                { from: -43.3, to: -42.1, type: 'door' }
+            ], 0.14);
+
+            // Два узких внутренних коридорчика (X [41.0..42.8] для 207 и X [42.8..44.2] для 208, Z [-41.8..-39.6])
+            addWallLine(targetGroup, 41.0, BZ_VEST, 41.0, BZ_CORR_END, [], 0.14);
+            addWallLine(targetGroup, 44.2, BZ_VEST, 44.2, BZ_CORR_END, [], 0.14);
+            addWallLine(targetGroup, BX_207_208, BZ_VEST, BX_207_208, BZ_RIGHT, [], INNER_T); // Перегородка между 207 и 208
+            addWallLine(targetGroup, 41.0, BZ_CORR_END, 44.2, BZ_CORR_END, [
+                { from: 41.2, to: 42.5, type: 'door' },
+                { from: 42.9, to: 44.0, type: 'door' }
+            ], 0.14);
+
+            // Горизонтальная стена между (207/208) и (209/203): X = 46.6, Z [-43.6..-37.2]
+            addWallLine(targetGroup, BX_208_TOP, BZ_LEFT, BX_208_TOP, BZ_RIGHT, [], INNER_T);
+            // Вертикальная перегородка между 209 и 203: Z = -40.4, X [46.6..51.0]
+            addWallLine(targetGroup, BX_208_TOP, BZ_MID_209_203, BX_TOP, BZ_MID_209_203, [], INNER_T);
+
+            // 5) Нижний ряд кабинетов (X [32.4..36.2], Z [-44.2..-27.4]): 205, две подсобки, 202, 201
+            // Заканчивается ровно на X = 36.2, чтобы сразу выше 201 (между 36.2 и ЛК №1 38.8) выходил Переход К4 ↔ К2!
+            addWallLine(targetGroup, B4_X_WEST, -44.2, 36.2, -44.2, [], INNER_T);
+            addWallLine(targetGroup, 36.2, -44.2, 36.2, B4_Z_SOUTH, [
+                { from: -40.2, to: -39.0, type: 'door' }, // Вход в 205
+                { from: -35.8, to: -34.6, type: 'door' }, // Вход в 202
+                { from: -30.0, to: -28.8, type: 'door' }  // Вход в 201
+            ], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -38.4, 36.2, -38.4, [
+                { from: 34.4, to: 35.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -36.4, 36.2, -36.4, [
+                { from: 34.4, to: 35.6, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, 34.2, -38.4, 34.2, -36.4, [], 0.14);
+            addWallLine(targetGroup, B4_X_WEST, -31.4, 36.2, -31.4, [], INNER_T);
+
+            // 6) Большой актовый зал 204 (X [51.0..66.0], Z [-41.8..-27.4]):
+            addWallLine(targetGroup, BX_TOP, -41.8, B4_X_EAST, -41.8, [
+                { from: 58.6, to: 60.4, type: 'door' }
+            ], INNER_T);
+            addWallLine(targetGroup, BX_TOP, BZ_LEFT, BX_TOP, B4_Z_SOUTH, [
+                { from: -36.8, to: -34.8, type: 'door' } // Двустворчатая дверь в актовый зал 204 рядом с 203
+            ], INNER_T);
+            [-34.2, -32.5, -30.8, -29.1].forEach(zRib => {
+                addWallLine(targetGroup, BX_TOP - 1.15, zRib, BX_TOP, zRib, [], 0.16);
+            });
+
+            // ПОДИУМ (СЦЕНА) В ЗАЛЕ 204
+            const stageX1 = 61.0, stageX2 = 65.6;
+            const stageZ1 = -39.8, stageZ2 = -29.8;
+            const mainStageGeom = new THREE.BoxGeometry(stageX2 - (stageX1 + 0.9), 1, stageZ2 - stageZ1);
+            registerDynamicStairStep(targetGroup, mainStageGeom, (stageX1 + 0.9 + stageX2) / 2, (stageZ1 + stageZ2) / 2, 0.22, 0);
+            const frontStageGeom = new THREE.BoxGeometry(0.92, 1, (stageZ2 - stageZ1) - 1.8);
+            registerDynamicStairStep(targetGroup, frontStageGeom, stageX1 + 0.45, (stageZ1 + stageZ2) / 2, 0.22, 0);
+            for (let i = 0; i < 4; i++) {
+                const stepRatio = 0.05 * (i + 1);
+                const stepGeom = new THREE.BoxGeometry(1.3, 1, 0.28);
+                registerDynamicStairStep(targetGroup, stepGeom, stageX2 - 0.8, stageZ1 - 1.1 + i * 0.28, stepRatio, 0);
+                registerDynamicStairStep(targetGroup, stepGeom, stageX2 - 0.8, stageZ2 + 1.1 - i * 0.28, stepRatio, 0);
+            }
+
+            // 3D-плашки помещений 2-го этажа Корпуса 4 и прямых переходов (buildingId = 4)
+            addRoomLabel(targetGroup, 2, '206', 49.2, -55.7, false, false, 4, 1.2);
+            addRoomLabel(targetGroup, 2, 'ЛК№2', 30.1, -48.3, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, 'Переход\nК3 ↔ К4', 24.0, -45.5, false, true, 4, 0.85);
+            addRoomLabel(targetGroup, 2, 'Переход\nК4 ↔ К2', 37.5, -20.6, false, true, 4, 0.85);
+            addRoomLabel(targetGroup, 2, 'С/У', 42.4, -49.1, true, false, 4, 0.72);
+            addRoomLabel(targetGroup, 2, 'С/У', 42.4, -46.1, true, false, 4, 0.72);
+            addRoomLabel(targetGroup, 2, 'Служеб.\nпом.', 46.2, -47.6, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 2, '210', 51.2, -47.6, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 2, '211', 55.3, -48.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, '212', 59.3, -48.2, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, 'ЛК№3', 65.2, -47.6, true, false, 4, 0.85);
+
+            addRoomLabel(targetGroup, 2, '205', 34.3, -41.3, true, false, 4, 0.90);
+            addRoomLabel(targetGroup, 2, '202', 34.3, -33.9, true, false, 4, 0.90);
+            addRoomLabel(targetGroup, 2, '201', 34.3, -29.4, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 2, '207', 41.0, -38.4, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, '208', 44.8, -38.4, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, '209', 48.8, -42.0, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, '203', 48.8, -38.8, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 2, 'ЛК№1', 40.6, -27.8, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 2, '204', 56.8, -34.5, false, false, 4, 1.15);
+        }
+
+        /**
+         * КОРПУС 4 — ЭТАЖ 3 (Каркас внешнего периметра как у 2-го этажа + сквозные лестницы ЛК №1, ЛК №2, ЛК №3)
+         */
+        function buildBuilding4Floor3(targetGroup) {
+            const OUTER_T = 0.24;
+            const INNER_T = 0.18;
+
+            // Основная плита перекрытия 3-го этажа Корпуса 4 (без переходов!)
+            addFloorRect(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_EAST, B4_Z_SOUTH, false);
+
+            // Плиты трех сквозных лестничных клеток
+            addFloorRect(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z2, true);
+            addFloorRect(targetGroup, B4_LK3_X1, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, true);
+            addFloorRect(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, true);
+
+            // Внешний периметр стен 3-го этажа Корпуса 4
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_WEST, B4_Z_SOUTH, [
+                { from: B4_LK2_Z1 + 0.4, to: B4_LK2_Z2 - 0.4, type: 'door' }
+            ], OUTER_T);
+            addWallLine(targetGroup, B4_X_EAST, B4_Z_NORTH, B4_X_EAST, B4_Z_SOUTH, [
+                { from: B4_LK3_Z1, to: B4_LK3_Z2, type: 'open' }
+            ], OUTER_T);
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_EAST, B4_Z_NORTH, [], OUTER_T);
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_SOUTH, B4_X_EAST, B4_Z_SOUTH, [
+                { from: B4_LK1_X1, to: B4_LK1_X2, type: 'open' }
+            ], OUTER_T);
+
+            // Стены и марши ЛК №2 (западная)
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z1, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z2, B4_LK2_X2, B4_LK2_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X1, B4_LK2_Z2, [], OUTER_T);
+            buildB4Staircase(targetGroup, B4_LK2_X1 + 0.1, B4_LK2_X2 - 0.1, B4_LK2_Z1 + 0.1, B4_LK2_Z2 - 0.1, false);
+
+            // Стены и марши ЛК №3 (верхняя)
+            addWallLine(targetGroup, B4_X_EAST, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z1, [], OUTER_T);
+            addWallLine(targetGroup, B4_X_EAST, B4_LK3_Z2, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK3_X2, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
+            buildB4Staircase(targetGroup, 63.2, B4_LK3_X2 - 0.15, B4_LK3_Z1 + 0.1, B4_LK3_Z2 - 0.1, false);
+
+            // Стены и марши ЛК №1 (правая нижняя)
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X1, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X2, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z2, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
+            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z1, [
+                { from: 39.8, to: 41.4, type: 'door' }
+            ], INNER_T);
+            buildB4Staircase(targetGroup, B4_LK1_X1 + 0.1, B4_LK1_X2 - 0.1, B4_LK1_Z1 + 0.1, B4_LK1_Z2 - 0.1, true);
+
+            // 3D-плашки 3-го этажа Корпуса 4 (buildingId = 4)
+            addRoomLabel(targetGroup, 3, '3 ЭТАЖ (КАРКАС)', 49.2, -44.5, false, true, 4, 1.15);
+            addRoomLabel(targetGroup, 3, 'ЛК№2', 30.1, -48.3, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 3, 'ЛК№3', 65.2, -47.6, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 3, 'ЛК№1', 40.6, -27.8, true, false, 4, 0.88);
+        }
+
+        const STAIR_SHAFTS_VALIDATION = [
+            // Корпус 1 (Этажи 1–7)
+            { name: 'К1 ЛК№1', bldg: 1, maxFloor: 7, x1: 8.6, x2: 16.0, z1: -3.5, z2: 0.15 },
+            { name: 'К1 ЛК№2', bldg: 1, maxFloor: 7, x1: 8.6, x2: 16.0, z1: 0.15, z2: 3.8 },
+            // Корпус 2 (Этажи 1–3)
+            { name: 'К2 ЛК№2', bldg: 2, maxFloor: 3, x1: B2_LK2_X1, x2: B2_LK2_X2, z1: B2_Z_TOP, z2: B2_Z_CORR_TOP },
+            { name: 'К2 ЛК№1', bldg: 2, maxFloor: 3, x1: B2_LK1_X1, x2: B2_LK1_X2, z1: B2_Z_TOP, z2: B2_Z_CORR_TOP },
+            { name: 'К2 ЛК№3', bldg: 2, maxFloor: 1, x1: B2_LK3_X1, x2: B2_LK3_X2, z1: B2_Z_TOP, z2: B2_LK3_Z_BOT },
+            // Корпус 3 (Этажи 1–2, западная сторона X [-1.6..4.6])
+            { name: 'К3 Южная ЛК', bldg: 3, maxFloor: 2, x1: B3_X_WEST, x2: B3_X_CORR_W, z1: B3_SHAFT_SOUTH_Z1, z2: B3_SHAFT_SOUTH_Z2 },
+            { name: 'К3 Северная ЛК', bldg: 3, maxFloor: 2, x1: B3_X_WEST, x2: B3_X_CORR_W, z1: B3_SHAFT_NORTH_Z1, z2: B3_SHAFT_NORTH_Z2 },
+            // Корпус 4 (Этажи 1–3, все 3 лестницы строго сквозные)
+            { name: 'К4 ЛК№2', bldg: 4, maxFloor: 3, x1: B4_LK2_X1, x2: B4_LK2_X2, z1: B4_LK2_Z1, z2: B4_LK2_Z2 },
+            { name: 'К4 ЛК№3', bldg: 4, maxFloor: 3, x1: B4_LK3_X1, x2: B4_LK3_X2, z1: B4_LK3_Z1, z2: B4_LK3_Z2 },
+            { name: 'К4 ЛК№1', bldg: 4, maxFloor: 3, x1: B4_LK1_X1, x2: B4_LK1_X2, z1: B4_LK1_Z1, z2: B4_LK1_Z2 }
+        ];
+        // Алиас в соответствии с требованиями пайплайна
+        const stairShaftDefs = STAIR_SHAFTS_VALIDATION;
+        const stairValidationItems = [];
+
+        function buildStairValidationAxes() {
+            STAIR_SHAFTS_VALIDATION.forEach(s => {
+                const cx = (s.x1 + s.x2) / 2;
+                const cz = (s.z1 + s.z2) / 2;
+                const w = Math.abs(s.x2 - s.x1);
+                const d = Math.abs(s.z2 - s.z1);
+
+                const pts = [
+                    new THREE.Vector3(cx, -0.5, cz),
+                    new THREE.Vector3(cx, 25, cz)
+                ];
+                const lineGeom = new THREE.BufferGeometry().setFromPoints(pts);
+                const centerLine = new THREE.Line(lineGeom, MATERIALS.stairAxisLine);
+                centerLine.computeLineDistances();
+                stairValidationGroup.add(centerLine);
+
+                const boxGeom = new THREE.BoxGeometry(w, 1, d);
+                const boxEdges = new THREE.EdgesGeometry(boxGeom);
+                const wireframeBox = new THREE.LineSegments(boxEdges, MATERIALS.stairBoxEdge);
+                wireframeBox.position.set(cx, 1, cz);
+                stairValidationGroup.add(wireframeBox);
+
+                stairValidationItems.push({ ...s, cx, cz, centerLine, wireframeBox });
+            });
+        }
+
+        function updateStairValidationAxes() {
+            const show = STATE.showStairAxes && STATE.mode === 'all';
+            stairValidationGroup.visible = show;
+            if (!show) return;
+
+            const botY = floorGroups[1].position.y;
+
+            stairValidationItems.forEach(item => {
+                const visibleByBuilding =
+                    STATE.buildingFilter === 'both' ||
+                    (STATE.buildingFilter === '1' && item.bldg === 1) ||
+                    (STATE.buildingFilter === '2' && item.bldg === 2) ||
+                    (STATE.buildingFilter === '3' && item.bldg === 3) ||
+                    (STATE.buildingFilter === '4' && item.bldg === 4);
+
+                item.centerLine.visible = visibleByBuilding;
+                item.wireframeBox.visible = visibleByBuilding;
+                if (!visibleByBuilding) return;
+
+                const topY = floorGroups[item.maxFloor].position.y + STATE.wallHeight;
+                const totalH = Math.max(0.5, topY - botY);
+
+                const posAttr = item.centerLine.geometry.attributes.position;
+                posAttr.setXYZ(0, item.cx, botY - 0.3, item.cz);
+                posAttr.setXYZ(1, item.cx, topY + 0.8, item.cz);
+                posAttr.needsUpdate = true;
+                item.centerLine.computeLineDistances();
+
+                item.wireframeBox.scale.y = totalH;
+                item.wireframeBox.position.set(item.cx, botY + totalH / 2, item.cz);
+            });
+        }
+
+        function buildAlignmentGuides() {
+            const corners = [
+                // Корпус 1 (все 7 этажей)
+                { gx: -14.0, gz: -4.0, maxFloor: 7, bldg: 1 },
+                { gx: -14.0, gz: 14.0, maxFloor: 7, bldg: 1 },
+                { gx: 12.5, gz: 14.0, maxFloor: 7, bldg: 1 },
+                { gx: 16.0, gz: -14.0, maxFloor: 7, bldg: 1 },
+                { gx: -10.0, gz: -14.0, maxFloor: 7, bldg: 1 },
+                // Корпус 2 (этажи 1–3)
+                { gx: B2_X_START, gz: B2_Z_TOP, maxFloor: 3, bldg: 2 },
+                { gx: B2_X_START, gz: B2_Z_BOT, maxFloor: 3, bldg: 2 },
+                { gx: B2_X_END, gz: B2_Z_TOP, maxFloor: 3, bldg: 2 },
+                { gx: B2_X_END, gz: B2_Z_BOT, maxFloor: 3, bldg: 2 },
+                // Корпус 3 (этажи 1–2)
+                { gx: B3_X_WEST, gz: B3_Z_SOUTH, maxFloor: 2, bldg: 3 },
+                { gx: B3_X_EAST, gz: B3_Z_SOUTH, maxFloor: 2, bldg: 3 },
+                { gx: B3_X_WEST, gz: B3_Z_NORTH, maxFloor: 2, bldg: 3 },
+                { gx: B3_X_EAST, gz: B3_Z_NORTH, maxFloor: 2, bldg: 3 },
+                // Корпус 4 (этажи 1–3)
+                { gx: B4_X_WEST, gz: B4_Z_SOUTH, maxFloor: 3, bldg: 4 },
+                { gx: B4_X_EAST, gz: B4_Z_SOUTH, maxFloor: 3, bldg: 4 },
+                { gx: B4_X_WEST, gz: B4_Z_NORTH, maxFloor: 3, bldg: 4 },
+                { gx: B4_X_EAST, gz: B4_Z_NORTH, maxFloor: 3, bldg: 4 }
+            ];
+
+            corners.forEach(item => {
+                const pts = [
+                    new THREE.Vector3(item.gx, 0, item.gz),
+                    new THREE.Vector3(item.gx, 10, item.gz)
+                ];
+                const geom = new THREE.BufferGeometry().setFromPoints(pts);
+                const line = new THREE.Line(geom, MATERIALS.guideLine);
+                line.computeLineDistances();
+                alignmentGuidesGroup.add(line);
+                guideLines.push({ ...item, line });
+            });
+        }
+
+        function updateAlignmentGuides() {
+            const show = STATE.showGuides && STATE.mode === 'all' && STATE.explodeGap > 0.3;
+            alignmentGuidesGroup.visible = show;
+            if (!show) return;
+
+            const botY = floorGroups[1].position.y;
+
+            guideLines.forEach(item => {
+                const visibleByBldg =
+                    STATE.buildingFilter === 'both' ||
+                    STATE.buildingFilter === String(item.bldg);
+                item.line.visible = visibleByBldg;
+                if (!visibleByBldg) return;
+
+                const topY = floorGroups[item.maxFloor].position.y;
+                const posAttr = item.line.geometry.attributes.position;
+                posAttr.setXYZ(0, item.gx, botY, item.gz);
+                posAttr.setXYZ(1, item.gx, Math.max(botY, topY), item.gz);
+                posAttr.needsUpdate = true;
+                item.line.computeLineDistances();
+            });
+        }
+
+        // Проверяет, попадает ли локальная точка (lx, lz) в плиту перекрытия этажа floorNum (с учётом активных корпусов)
+        function isPointInFloorFootprint(lx, lz, floorNum, bldId = null) {
+            const m = 0.22;
+            const showB1 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '1';
+            const showB2 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '2';
+            const showB3 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '3';
+            const showB4 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '4';
+
+            if (showB1 && (!bldId || bldId === 1)) {
+                if (lx >= -10.0 - m && lx <= 16.0 + m && lz >= -14.0 - m && lz <= -4.0 + m) return true;
+                if (lx >= -14.0 - m && lx <= 16.0 + m && lz >= -4.0 - m && lz <= 4.0 + m) return true;
+                if (lx >= -14.0 - m && lx <= 12.5 + m && lz >= 4.0 - m && lz <= 14.0 + m) return true;
+                if (floorNum <= 3) {
+                    if (lx >= 16.0 - m && lx <= 20.4 + m && lz >= -9.5 - m && lz <= -2.2 + m) return true;
+                }
+            }
+
+            if (showB2 && (!bldId || bldId === 2) && floorNum <= 3) {
+                if (lx >= B2_X_START - m && lx <= B2_X_END + m && lz >= B2_Z_TOP - m && lz <= B2_Z_BOT + m) return true;
+            }
+
+            if (showB3 && (!bldId || bldId === 3) && floorNum <= 2) {
+                if (lx >= B3_X_WEST - m && lx <= B3_X_EAST + m && lz >= B3_Z_NORTH - m && lz <= B3_Z_SOUTH + m) return true;
+                if (lx >= B3_X_EAST - m && lx <= 15.6 + m && lz >= -47.6 - m && lz <= -44.0 + m) return true;
+            }
+
+            if (showB4 && (!bldId || bldId === 4) && floorNum <= 3) {
+                if (lx >= B4_X_WEST - m && lx <= B4_X_EAST + m && lz >= B4_Z_NORTH - m && lz <= B4_Z_SOUTH + m) return true;
+                if (lx >= B4_LK2_X1 - m && lx <= B4_LK2_X2 + m && lz >= B4_LK2_Z1 - m && lz <= B4_LK2_Z2 + m) return true;
+                if (lx >= B4_LK3_X1 - m && lx <= B4_LK3_X2 + m && lz >= B4_LK3_Z1 - m && lz <= B4_LK3_Z2 + m) return true;
+                if (lx >= B4_LK1_X1 - m && lx <= B4_LK1_X2 + m && lz >= B4_LK1_Z1 - m && lz <= B4_LK1_Z2 + m) return true;
+                if (floorNum === 2) {
+                    // Два прямых перехода 2-го этажа Корпуса 4 (К3 ↔ К4 и К4 ↔ К2)
+                    if (lx >= 15.6 - m && lx <= B4_X_WEST + m && lz >= -46.8 - m && lz <= -44.2 + m) return true;
+                    if (lx >= 36.2 - m && lx <= B4_LK1_X1 + m && lz >= B4_Z_SOUTH - m && lz <= B2_Z_TOP + m) return true;
+                }
+            }
+            return false;
+        }
+
+        // Геометрическая проверка: пересекает ли луч взгляда от камеры к плашке плиту любого вышележащего этажа
+        const _tempLabelWorldPos = new THREE.Vector3();
+        function isLabelOccludedByUpperSlabs(labelItem, floorNum = null, bldId = null) {
+            const f = floorNum !== null ? floorNum : labelItem.floor;
+            const fg = floorGroups[f];
+            if (!fg || !fg.visible) return true;
+
+            if (labelItem.isVector3) {
+                _tempLabelWorldPos.copy(labelItem);
+            } else {
+                _tempLabelWorldPos.set(
+                    fg.position.x + labelItem.localX,
+                    fg.position.y + labelItem.mesh.position.y,
+                    fg.position.z + labelItem.localZ
+                );
+            }
+
+            const camPos = camera.position;
+            const dy = _tempLabelWorldPos.y - camPos.y;
+
+            for (let u = f + 1; u <= 7; u++) {
+                const ug = floorGroups[u];
+                if (!ug || !ug.visible) continue;
+
+                const checkHeights = [ug.position.y, ug.position.y + STATE.wallHeight * 0.55];
+                for (let i = 0; i < checkHeights.length; i++) {
+                    const planeY = checkHeights[i];
+                    if ((camPos.y > planeY && _tempLabelWorldPos.y < planeY) ||
+                        (camPos.y < planeY && _tempLabelWorldPos.y > planeY)) {
+                        const t = (planeY - camPos.y) / dy;
+                        if (t > 0.01 && t < 0.99) {
+                            const hitX = camPos.x + t * (_tempLabelWorldPos.x - camPos.x) - ug.position.x;
+                            const hitZ = camPos.z + t * (_tempLabelWorldPos.z - camPos.z) - ug.position.z;
+                            if (isPointInFloorFootprint(hitX, hitZ, u, bldId)) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function updateLabelsVisibility() {
+            const showB1 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '1';
+            const showB2 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '2';
+            const showB3 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '3';
+            const showB4 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '4';
+
+            labelSprites.forEach(item => {
+                if (!STATE.showLabels) {
+                    item.mesh.visible = false;
+                    return;
+                }
+                if (item.building === 1 && !showB1) {
+                    item.mesh.visible = false;
+                    return;
+                }
+                if (item.building === 2 && !showB2) {
+                    item.mesh.visible = false;
+                    return;
+                }
+                if (item.building === 3 && !showB3) {
+                    item.mesh.visible = false;
+                    return;
+                }
+                if (item.building === 4 && !showB4) {
+                    item.mesh.visible = false;
+                    return;
+                }
+
+                if (STATE.mode !== 'all' && STATE.mode !== 'sideBySide') {
+                    const activeFloor = parseInt(STATE.mode, 10);
+                    item.mesh.visible = (item.floor === activeFloor);
+                    return;
+                }
+
+                if (STATE.mode === 'sideBySide') {
+                    item.mesh.visible = true;
+                    return;
+                }
+
+                if (!STATE.smartLabelOcclusion) {
+                    item.mesh.visible = true;
+                } else {
+                    item.mesh.visible = !isLabelOccludedByUpperSlabs(item, item.floor, item.building);
+                }
+            });
+        }
+
+        function recalcTargetPositions() {
+            const stepH = STATE.wallHeight + 0.25 + (STATE.exploded ? STATE.explodeGap : 0);
+            const showB1 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '1';
+            const showB2 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '2';
+            const showB3 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '3';
+            const showB4 = STATE.buildingFilter === 'both' || STATE.buildingFilter === '4';
+
+            for (let f = 1; f <= 7; f++) {
+                bldg1FloorGroups[f].visible = showB1;
+                bldg2FloorGroups[f].visible = showB2 && (f <= 3);
+                bldg3FloorGroups[f].visible = showB3 && (f <= 2);
+                bldg4FloorGroups[f].visible = showB4 && (f <= 3);
+            }
+
+            if (STATE.mode === 'all') {
+                for (let f = 1; f <= 7; f++) {
+                    floorGroups[f].visible = true;
+                    STATE.targetPos[f].set(0, stepH * (f - 1), 0);
+                }
+            } else if (STATE.mode === 'sideBySide') {
+                for (let f = 1; f <= 7; f++) {
+                    floorGroups[f].visible = true;
+                }
+                // Аккуратное смещение этажей в режиме "Сравнение рядом", чтобы Корпуса 1, 2, 3 и 4 не налезали друг на друга
+                STATE.targetPos[1].set(-96, 0, 42);
+                STATE.targetPos[2].set(0, 0, 42);
+                STATE.targetPos[3].set(96, 0, 42);
+                STATE.targetPos[4].set(-54, 0, -45);
+                STATE.targetPos[5].set(-18, 0, -45);
+                STATE.targetPos[6].set(18, 0, -45);
+                STATE.targetPos[7].set(54, 0, -45);
+            } else {
+                const selectedFloor = parseInt(STATE.mode, 10);
+                for (let f = 1; f <= 7; f++) {
+                    floorGroups[f].visible = (f === selectedFloor);
+                    if (f === selectedFloor) {
+                        STATE.targetPos[f].set(0, 0, 0);
+                    }
+                }
+            }
+
+            updateLabelsVisibility();
+        }
+
+        // Алиас в соответствии с правилами пайплайна
+        const updateVisibility = recalcTargetPositions;
+
+        function updateWallHeights() {
+            wallMeshes.forEach(m => {
+                m.scale.y = STATE.wallHeight;
+                m.position.y = STATE.wallHeight / 2;
+            });
+
+            doorMeshes.forEach(m => {
+                m.scale.y = STATE.wallHeight;
+                m.position.y = STATE.wallHeight / 2;
+                m.visible = STATE.showDoors;
+            });
+
+            stairMeshes.forEach(st => {
+                const stepH = Math.max(0.06, STATE.wallHeight * st.heightRatio);
+                st.mesh.scale.y = stepH;
+                st.mesh.position.y = (stepH / 2) + st.yOffset;
+            });
+
+            labelSprites.forEach(item => {
+                item.mesh.position.y = STATE.wallHeight * 0.65;
+            });
+
+            recalcTargetPositions();
+        }
+
+        function updateExplodeButtonStyle() {
+            const btnExplode = document.getElementById('btn-explode');
+            if (STATE.exploded && STATE.mode === 'all' && STATE.explodeGap > 0.2) {
+                btnExplode.classList.add('explode-btn-active');
+                btnExplode.innerHTML = '<span>💥 Сложить этажи вместе</span>';
+            } else {
+                btnExplode.classList.remove('explode-btn-active');
+                btnExplode.innerHTML = '<span>💥 Взрывной эффект</span>';
+            }
+        }
+
+        const FLOOR_DESCRIPTIONS = {
+            '7': 'Этаж 7: Корпус 1 (каб. 701–704)',
+            '6': 'Этаж 6: Корпус 1 (каб. 601–605)',
+            '5': 'Этаж 5: Корпус 1 (каб. 501–504)',
+            '4': 'Этаж 4: Корпус 1 (базовый каркас + ядро лифтов и лестниц)',
+            '3': 'Этаж 3: Корпус 1 (301–305) + Корпус 2 (302–318) + Корпус 4 (каркас и лестницы)',
+            '2': 'Этаж 2: Корпуса 1, 2, 3 и 4 + надземные переходы К1↔К2, К1↔К3, К3↔К4 и К4↔К2',
+            '1': 'Этаж 1: Корпус 1 + Корпус 2 (103–111) + Корпус 3 (102–117) + Корпус 4 (1–24, 102–105)'
+        };
+
+        function getActiveCenterX() {
+            if (STATE.buildingFilter === '1') return 1.0;
+            if (STATE.buildingFilter === '2') return 44.2;
+            if (STATE.buildingFilter === '3') return 5.9;
+            if (STATE.buildingFilter === '4') return 38.5;
+            return 24.0;
+        }
+
+        function getActiveCenterZ() {
+            if (STATE.buildingFilter === '1') return -2.0;
+            if (STATE.buildingFilter === '2') return -5.1;
+            if (STATE.buildingFilter === '3') return -40.2;
+            if (STATE.buildingFilter === '4') return -44.5;
+            return -22.0;
+        }
+
+        function setBuildingFilter(bFilter) {
+            STATE.buildingFilter = bFilter;
+            document.querySelectorAll('.bldg-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-bldg-' + bFilter).classList.add('active');
+
+            const cx = getActiveCenterX();
+            const cz = getActiveCenterZ();
+            const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 2.5 : 2.5;
+            STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
+
+            recalcTargetPositions();
+            updateAlignmentGuides();
+            updateStairValidationAxes();
+        }
+
+        function setMode(newMode) {
+            STATE.mode = newMode;
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+
+            const subtitle = document.getElementById('status-subtitle');
+            const cx = getActiveCenterX();
+            const cz = getActiveCenterZ();
+
+            if (newMode === 'all') {
+                document.getElementById('btn-mode-all').classList.add('active');
+                subtitle.textContent = 'Все этажи комплекса: Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.)';
+                const midY = STATE.exploded ? (STATE.wallHeight + STATE.explodeGap) * 3 : STATE.wallHeight * 3;
+                STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
+            } else if (newMode === 'sideBySide') {
+                document.getElementById('btn-mode-side').classList.add('active');
+                subtitle.textContent = 'Сравнение рядом: Все этажи на одном уровне без наложений';
+                STATE.targetControlsCenter = new THREE.Vector3(10, 0.5, 0);
+                STATE.targetCamPos = new THREE.Vector3(10, 155, 95);
+            } else {
+                document.getElementById('btn-mode-' + newMode).classList.add('active');
+                subtitle.textContent = FLOOR_DESCRIPTIONS[newMode] || '';
+                STATE.targetControlsCenter = new THREE.Vector3(cx, 0.5, cz);
+            }
+
+            recalcTargetPositions();
+            updateExplodeButtonStyle();
+        }
+
+        function setupUI() {
+            document.getElementById('btn-bldg-both').addEventListener('click', () => setBuildingFilter('both'));
+            document.getElementById('btn-bldg-1').addEventListener('click', () => setBuildingFilter('1'));
+            document.getElementById('btn-bldg-2').addEventListener('click', () => setBuildingFilter('2'));
+            document.getElementById('btn-bldg-3').addEventListener('click', () => setBuildingFilter('3'));
+            document.getElementById('btn-bldg-4').addEventListener('click', () => setBuildingFilter('4'));
+
+            document.getElementById('btn-mode-all').addEventListener('click', () => setMode('all'));
+            document.getElementById('btn-mode-side').addEventListener('click', () => setMode('sideBySide'));
+            for (let f = 1; f <= 7; f++) {
+                document.getElementById('btn-mode-' + f).addEventListener('click', () => setMode(String(f)));
+            }
+
+            const btnExplode = document.getElementById('btn-explode');
+            const sliderExplode = document.getElementById('slider-explode');
+            const valExplode = document.getElementById('explode-val');
+
+            const sliderHeight = document.getElementById('slider-wall-height');
+            const valHeight = document.getElementById('wall-height-val');
+
+            const sliderSlabOpacity = document.getElementById('slider-slab-opacity');
+            const valSlabOpacity = document.getElementById('slab-opacity-val');
+
+            const toggleDoors = document.getElementById('toggle-doors');
+            const toggleLabels = document.getElementById('toggle-labels');
+            const toggleSmartOcclusion = document.getElementById('toggle-smart-occlusion');
+            const toggleStairAxes = document.getElementById('toggle-stair-axes');
+            const toggleGuides = document.getElementById('toggle-guides');
+            const toggleEdges = document.getElementById('toggle-edges');
+
+            const btnView3D = document.getElementById('btn-view-3d');
+            const btnViewTop = document.getElementById('btn-view-top');
+            const btnViewSide = document.getElementById('btn-view-side');
+            const btnView305 = document.getElementById('btn-view-305');
+
+            btnExplode.addEventListener('click', () => {
+                if (STATE.mode !== 'all') {
+                    setMode('all');
+                    STATE.exploded = true;
+                } else {
+                    STATE.exploded = !STATE.exploded;
+                }
+
+                if (STATE.exploded && STATE.explodeGap < 1.0) {
+                    STATE.explodeGap = 5.5;
+                } else if (!STATE.exploded) {
+                    STATE.explodeGap = 0.0;
+                }
+
+                sliderExplode.value = STATE.explodeGap;
+                valExplode.textContent = STATE.explodeGap.toFixed(1) + ' м';
+
+                recalcTargetPositions();
+                updateExplodeButtonStyle();
+
+                const midY = STATE.exploded ? (STATE.wallHeight + STATE.explodeGap) * 3 : STATE.wallHeight * 3;
+                STATE.targetControlsCenter = new THREE.Vector3(getActiveCenterX(), midY, getActiveCenterZ());
+            });
+
+            sliderExplode.addEventListener('input', e => {
+                const v = parseFloat(e.target.value);
+                STATE.explodeGap = v;
+                STATE.exploded = v > 0.1;
+                valExplode.textContent = v.toFixed(1) + ' м';
+                if (STATE.mode !== 'all') {
+                    setMode('all');
+                } else {
+                    recalcTargetPositions();
+                    updateExplodeButtonStyle();
+                }
+            });
+
+            sliderHeight.addEventListener('input', e => {
+                STATE.wallHeight = parseFloat(e.target.value);
+                valHeight.textContent = STATE.wallHeight.toFixed(2) + ' м';
+                updateWallHeights();
+            });
+
+            sliderSlabOpacity.addEventListener('input', e => {
+                STATE.slabOpacity = parseFloat(e.target.value);
+                valSlabOpacity.textContent = Math.round(STATE.slabOpacity * 100) + '%';
+                const isTrans = STATE.slabOpacity < 0.99;
+                MATERIALS.slab.transparent = isTrans;
+                MATERIALS.coreSlab.transparent = isTrans;
+                MATERIALS.slab.opacity = STATE.slabOpacity;
+                MATERIALS.coreSlab.opacity = STATE.slabOpacity;
+                MATERIALS.slab.needsUpdate = true;
+                MATERIALS.coreSlab.needsUpdate = true;
+            });
+
+            toggleDoors.addEventListener('change', e => {
+                STATE.showDoors = e.target.checked;
+                updateWallHeights();
+            });
+
+            toggleLabels.addEventListener('change', e => {
+                STATE.showLabels = e.target.checked;
+                updateLabelsVisibility();
+            });
+
+            toggleSmartOcclusion.addEventListener('change', e => {
+                STATE.smartLabelOcclusion = e.target.checked;
+                updateLabelsVisibility();
+            });
+
+            toggleStairAxes.addEventListener('change', e => {
+                STATE.showStairAxes = e.target.checked;
+                updateStairValidationAxes();
+            });
+
+            toggleGuides.addEventListener('change', e => {
+                STATE.showGuides = e.target.checked;
+                updateAlignmentGuides();
+            });
+
+            toggleEdges.addEventListener('change', e => {
+                STATE.showEdges = e.target.checked;
+                wallEdges.forEach(line => line.visible = STATE.showEdges);
+                doorEdges.forEach(line => line.visible = STATE.showEdges);
+            });
+
+            btnView3D.addEventListener('click', () => {
+                const cx = getActiveCenterX();
+                const cz = getActiveCenterZ();
+                const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 3 : 3.0;
+                STATE.targetCamPos = new THREE.Vector3(cx - 24, 56 + midY, cz + 56);
+                STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
+            });
+
+            btnViewTop.addEventListener('click', () => {
+                const cx = getActiveCenterX();
+                const cz = getActiveCenterZ();
+                const distY = STATE.mode === 'sideBySide' ? 160 : 75;
+                STATE.targetCamPos = new THREE.Vector3(cx, distY, cz + 0.01);
+                STATE.targetControlsCenter = new THREE.Vector3(cx, 0, cz);
+            });
+
+            btnViewSide.addEventListener('click', () => {
+                const cx = getActiveCenterX();
+                const cz = getActiveCenterZ();
+                const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 3 : 3.5;
+                STATE.targetCamPos = new THREE.Vector3(cx, midY + 14, cz + 72);
+                STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
+            });
+
+            btnView305.addEventListener('click', () => {
+                const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 1.5 : 3.5;
+                STATE.targetCamPos = new THREE.Vector3(36.0, midY + 34, -2.0);
+                STATE.targetControlsCenter = new THREE.Vector3(36.0, midY, -28.0);
+            });
+
+            updateExplodeButtonStyle();
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            for (let f = 1; f <= 7; f++) {
+                floorGroups[f].position.lerp(STATE.targetPos[f], 0.11);
+            }
+
+            if (STATE.targetCamPos) {
+                camera.position.lerp(STATE.targetCamPos, 0.12);
+                if (camera.position.distanceTo(STATE.targetCamPos) < 0.15) {
+                    STATE.targetCamPos = null;
+                }
+            }
+            if (STATE.targetControlsCenter) {
+                controls.target.lerp(STATE.targetControlsCenter, 0.12);
+                if (controls.target.distanceTo(STATE.targetControlsCenter) < 0.1) {
+                    STATE.targetControlsCenter = null;
+                }
+            }
+
+            updateAlignmentGuides();
+            updateStairValidationAxes();
+            updateLabelsVisibility();
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
