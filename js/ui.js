@@ -21,10 +21,7 @@ function setBuildingFilter(bFilter) {
     const targetBtn = document.getElementById('btn-bldg-' + bFilter);
     if (targetBtn) targetBtn.classList.add('active');
 
-    const cx = getActiveCenterX();
-    const cz = getActiveCenterZ();
-    const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 2.5 : 2.5;
-    STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
+    // Камера сохраняет текущую точку обзора и зум пользователя без сброса
 
     recalcTargetPositions();
     updateAlignmentGuides();
@@ -36,15 +33,12 @@ function setMode(newMode) {
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
 
     const subtitle = document.getElementById('status-subtitle');
-    const cx = getActiveCenterX();
-    const cz = getActiveCenterZ();
 
     if (newMode === 'all') {
         const btnAll = document.getElementById('btn-mode-all');
         if (btnAll) btnAll.classList.add('active');
         if (subtitle) subtitle.textContent = 'Все этажи комплекса: Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.) + Корпус 4 (1–3 эт.)';
-        const midY = STATE.exploded ? (STATE.wallHeight + STATE.explodeGap) * 3 : STATE.wallHeight * 3;
-        STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
+        // Сохраняем положение камеры без сброса
     } else if (newMode === 'sideBySide') {
         const btnSide = document.getElementById('btn-mode-side');
         if (btnSide) btnSide.classList.add('active');
@@ -55,7 +49,7 @@ function setMode(newMode) {
         const btnFloor = document.getElementById('btn-mode-' + newMode);
         if (btnFloor) btnFloor.classList.add('active');
         if (subtitle) subtitle.textContent = FLOOR_DESCRIPTIONS[newMode] || '';
-        STATE.targetControlsCenter = new THREE.Vector3(cx, 0.5, cz);
+        // Сохраняем положение камеры без сброса
     }
 
     recalcTargetPositions();
@@ -101,9 +95,6 @@ function setupUI() {
 
         recalcTargetPositions();
         updateExplodeButtonStyle();
-
-        const midY = STATE.exploded ? (STATE.wallHeight + STATE.explodeGap) * 3 : STATE.wallHeight * 3;
-        STATE.targetControlsCenter = new THREE.Vector3(getActiveCenterX(), midY, getActiveCenterZ());
     });
 
     sliderExplode?.addEventListener('input', e => {
