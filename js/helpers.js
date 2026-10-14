@@ -29,6 +29,40 @@ function addFloorRect(targetGroup, x1, z1, x2, z2, isCore = false) {
     mesh.add(line);
 }
 
+function addFloorPolygon(targetGroup, points, isCore = false) {
+    if (!points || points.length < 3) return;
+    const shape = new THREE.Shape();
+    shape.moveTo(points[0][0], points[0][1]);
+    for (let i = 1; i < points.length; i++) {
+        shape.lineTo(points[i][0], points[i][1]);
+    }
+    shape.closePath();
+
+    const thickness = 0.16;
+    const geom = new THREE.ExtrudeGeometry(shape, {
+        depth: thickness,
+        bevelEnabled: false
+    });
+    geom.rotateX(Math.PI / 2);
+
+    const mat = isCore ? MATERIALS.coreSlab : MATERIALS.slab;
+    const mesh = new THREE.Mesh(geom, mat);
+    mesh.position.set(0, (isCore ? 0.008 : 0), 0);
+    mesh.receiveShadow = true;
+    mesh.userData.isFloorSlab = true;
+    mesh.userData.isInterior = false;
+    mesh.userData.isExterior = true;
+    targetGroup.add(mesh);
+    slabMeshes.push(mesh);
+
+    const edges = new THREE.EdgesGeometry(geom);
+    const line = new THREE.LineSegments(edges, MATERIALS.edgeMain);
+    line.userData.isFloorSlab = true;
+    line.userData.isInterior = false;
+    line.userData.isExterior = true;
+    mesh.add(line);
+}
+
 function addWallLine(targetGroup, x1, z1, x2, z2, openings = [], wallThickness = 0.18) {
     const isHorizontal = Math.abs(z2 - z1) < 0.001;
     const startCoord = isHorizontal ? Math.min(x1, x2) : Math.min(z1, z2);

@@ -731,62 +731,233 @@
         }
 
         /**
-         * КОРПУС 4 — ЭТАЖ 3 (Точный внешний контур 2-го этажа + сквозные лестницы ЛК №1, ЛК №2, ЛК №3)
+         * КОРПУС 4 — ЭТАЖ 3 (Полная планировка по чертежу: Второй свет над 206 и 204, Витраж, 301–312, С/У и ЛК №1–3)
          */
         function buildBuilding4Floor3(targetGroup) {
             const OUTER_T = 0.24;
             const INNER_T = 0.18;
 
-            // Плиты перекрытия 3-го этажа Корпуса 4 — повторяют контур 2-го этажа (без надземных переходов)
+            // --- 1. ПЛИТЫ ПЕРЕКРЫТИЯ 3-ГО ЭТАЖА ---
+            // Левая половина (Второй свет над спортзалом 206): X [32.4..66.0], Z [-61.6..-49.8]
             addFloorRect(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_S_GYM, B4_Z_MID_N, false);
+            // Правая половина (301-312, С/У, Витраж и Второй свет над залом 204): X [32.4..66.0], Z [-49.8..-27.4]
             addFloorRect(targetGroup, B4_X_WEST, B4_Z_MID_N, B4_X_S_HALL, B4_Z_SOUTH, false);
+
+            // Выделенная тонировка зон С/У и Витража
+            addFloorRect(targetGroup, 38.2, -41.4, 43.0, -37.2, true); // Блок двух С/У
+            addFloorRect(targetGroup, 38.2, -37.2, 45.0, -31.2, true); // Витраж
 
             // Плиты трех сквозных лестничных клеток
             addFloorRect(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z2, true);
             addFloorRect(targetGroup, 61.6, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, true);
             addFloorRect(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, true);
 
-            // Внешний периметр стен 3-го этажа Корпуса 4
+            // --- 2. ВНЕШНИЙ ПЕРИМЕТР И ЛЕСТНИЧНЫЕ КЛЕТКИ ---
+            // Нижняя (южная) внешняя стена (X = 32.4) со входом из ЛК №2
             addWallLine(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_WEST, B4_Z_SOUTH, [
-                { from: B4_LK2_Z1 + 0.4, to: B4_LK2_Z2 - 0.4, type: 'door' }
+                { from: -49.1, to: -47.5, type: 'door' }
             ], OUTER_T);
+
+            // Верхняя (северная) внешняя стена (X = 66.0)
             addWallLine(targetGroup, B4_X_S_GYM, B4_Z_NORTH, B4_X_S_GYM, B4_LK3_Z1, [], OUTER_T);
             addWallLine(targetGroup, B4_X_S_HALL, B4_LK3_Z2, B4_X_S_HALL, B4_Z_SOUTH, [], OUTER_T);
+
+            // Левая (западная) внешняя стена Второго света (Z = -61.6)
             addWallLine(targetGroup, B4_X_WEST, B4_Z_NORTH, B4_X_S_GYM, B4_Z_NORTH, [], OUTER_T);
+
+            // Правая (восточная) внешняя стена (Z = -27.4) с проёмом в ЛК №1
             addWallLine(targetGroup, B4_X_WEST, B4_Z_SOUTH, B4_X_S_HALL, B4_Z_SOUTH, [
                 { from: B4_LK1_X1, to: B4_LK1_X2, type: 'open' }
             ], OUTER_T);
 
-            // Стены и марши ЛК №2 (южная)
+            // Шахта ЛК №2 (южная, X [27.8..32.4], Z [-49.8..-46.8])
             addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X2, B4_LK2_Z1, [], OUTER_T);
             addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z2, B4_LK2_X2, B4_LK2_Z2, [], OUTER_T);
             addWallLine(targetGroup, B4_LK2_X1, B4_LK2_Z1, B4_LK2_X1, B4_LK2_Z2, [], OUTER_T);
             buildB4Staircase(targetGroup, B4_LK2_X1 + 0.1, B4_LK2_X2 - 0.1, B4_LK2_Z1 + 0.1, B4_LK2_Z2 - 0.1, false);
 
-            // Стены и марши ЛК №3 (северная)
+            // Шахта ЛК №3 (северная, X [61.6..69.0], Z [-49.8..-45.4])
             addWallLine(targetGroup, B4_X_S_GYM, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z1, [], OUTER_T);
             addWallLine(targetGroup, B4_X_S_HALL, B4_LK3_Z2, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
             addWallLine(targetGroup, B4_LK3_X2, B4_LK3_Z1, B4_LK3_X2, B4_LK3_Z2, [], OUTER_T);
-            addWallLine(targetGroup, 61.6, B4_LK3_Z1, B4_X_S_GYM, B4_LK3_Z1, [
-                { from: 61.8, to: 63.0, type: 'door' }
-            ], INNER_T);
-            addWallLine(targetGroup, 61.6, B4_LK3_Z2, B4_X_S_HALL, B4_LK3_Z2, [
-                { from: 61.8, to: 63.0, type: 'door' }
+            addWallLine(targetGroup, 61.6, B4_LK3_Z1, 61.6, B4_LK3_Z2, [
+                { from: -49.0, to: -47.8, type: 'door' }
             ], INNER_T);
             buildB4Staircase(targetGroup, 63.2, B4_LK3_X2 - 0.15, B4_LK3_Z1 + 0.1, B4_LK3_Z2 - 0.1, false);
 
-            // Стены и марши ЛК №1 (восточная)
+            // Шахта ЛК №1 (восточная, X [38.8..42.4], Z [-31.2..-24.4])
             addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X1, B4_LK1_Z2, [], OUTER_T);
             addWallLine(targetGroup, B4_LK1_X2, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
             addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z2, B4_LK1_X2, B4_LK1_Z2, [], OUTER_T);
-            addWallLine(targetGroup, B4_LK1_X1, B4_LK1_Z1, B4_LK1_X2, B4_LK1_Z1, [
-                { from: 39.8, to: 41.4, type: 'door' }
+            // Западная стена ЛК №1 с двумя выходами (в южный коридор и в 310)
+            addWallLine(targetGroup, 38.2, B4_LK1_Z1, 42.4, B4_LK1_Z1, [
+                { from: 38.4, to: 39.5, type: 'door' },
+                { from: 41.1, to: 42.2, type: 'door' }
             ], INNER_T);
             buildB4Staircase(targetGroup, B4_LK1_X1 + 0.1, B4_LK1_X2 - 0.1, B4_LK1_Z1 + 0.1, B4_LK1_Z2 - 0.1, true);
 
-            // 3D-плашки 3-го этажа Корпуса 4 (buildingId = 4)
-            addRoomLabel(targetGroup, 3, '3 ЭТАЖ (КАРКАС)', 49.2, -44.5, false, true, 4, 1.15);
+            // --- 3. КОЛОННЫ И СТЕНЫ ВТОРОГО СВЕТА (ЗАЛ 206 И ЗАЛ 204) ---
+            // Капитальная стена между левым Вторым светом (над 206) и блоком 301 (Z = -49.8)
+            addWallLine(targetGroup, B4_X_WEST, B4_Z_MID_N, B4_X_S_GYM, B4_Z_MID_N, [], INNER_T);
+
+            // 14 колонн по периметру левого Второго света (над спортзалом 206)
+            B4_GYM_COLUMNS.forEach(col => {
+                addSquareColumn(targetGroup, col.x, col.z, 0.38);
+            });
+
+            // 4 колонны вдоль правой (восточной) стены правого Второго света (над актовым залом 204)
+            [49.5, 54.8, 60.2, 65.6].forEach(cx => {
+                addSquareColumn(targetGroup, cx, B4_Z_SOUTH - 0.25, 0.36);
+            });
+
+            // Пилоны вдоль стены 301 и 302 (как на чертеже)
+            addSquareColumn(targetGroup, 43.5, -49.6, 0.34);
+            addSquareColumn(targetGroup, 49.6, -49.5, 0.42);
+            addSquareColumn(targetGroup, 53.6, -47.4, 0.36);
+
+            // --- 4. ЦЕНТРАЛЬНАЯ ПРОДОЛЬНАЯ ЛЕНТА: 301, 303, 302 И ВЕРХНИЙ УЗЕЛ У ЛК №3 (Z [-49.8..-43.6]) ---
+            // Южный торец 301 и 303 (выход в главный коридор на X = 38.2)
+            addWallLine(targetGroup, 38.2, -49.8, 38.2, -43.6, [
+                { from: -49.3, to: -48.1, type: 'door' }, // Вход в 301
+                { from: -45.2, to: -44.0, type: 'door' }  // Вход в 303
+            ], INNER_T);
+
+            // Продольная стена между узким помещением 301 и 303/302 (Z = -47.6, X [38.2..61.6])
+            addWallLine(targetGroup, 38.2, -47.6, 61.6, -47.6, [
+                { from: 59.6, to: 60.6, type: 'door' },
+                { from: 60.6, to: 61.5, type: 'door' }
+            ], INNER_T);
+
+            // Поперечная перегородка тамбура вверху 301 перед ЛК №3 (X = 57.6, Z [-49.8..-47.6])
+            addWallLine(targetGroup, 57.6, -49.8, 57.6, -47.6, [
+                { from: -49.2, to: -48.0, type: 'door' }
+            ], INNER_T);
+
+            // Продольная капитальная стена справа от 303, 302 и верхнего коридора (Z = -43.6, X [38.2..66.0])
+            addWallLine(targetGroup, 38.2, -43.6, B4_X_S_HALL, -43.6, [], INNER_T);
+
+            // Выгородка (подсобка) в нижнем левом углу 303 (X [39.2..41.8], Z [-47.6..-46.2])
+            addWallLine(targetGroup, 39.2, -47.6, 39.2, -46.2, [], 0.14);
+            addWallLine(targetGroup, 41.8, -47.6, 41.8, -46.2, [], 0.14);
+            addWallLine(targetGroup, 39.2, -46.2, 41.8, -46.2, [
+                { from: 39.6, to: 40.7, type: 'door' }
+            ], 0.14);
+
+            // Перегородка между 303 и 302 (X = 46.8, Z [-47.6..-43.6])
+            addWallLine(targetGroup, 46.8, -47.6, 46.8, -43.6, [
+                { from: -45.2, to: -44.0, type: 'door' }
+            ], INNER_T);
+
+            // Верхняя стена комнаты 302 (X = 56.4, Z [-47.6..-43.6])
+            addWallLine(targetGroup, 56.4, -47.6, 56.4, -43.6, [], INNER_T);
+
+            // Подсобные помещения между 302 и ЛК №3 (X [56.4..66.0], Z [-47.6..-43.6])
+            addWallLine(targetGroup, 56.4, -46.4, 59.6, -46.4, [], 0.14);
+            addWallLine(targetGroup, 59.6, -47.6, 59.6, -46.4, [], 0.14);
+            // Две малые камеры вдоль стены Z = -43.6
+            addWallLine(targetGroup, 56.4, -45.0, 59.0, -45.0, [], 0.14);
+            addWallLine(targetGroup, 59.0, -45.0, 59.0, -43.6, [], 0.14);
+            addWallLine(targetGroup, 60.2, -45.0, 62.4, -45.0, [
+                { from: 60.7, to: 61.9, type: 'door' }
+            ], 0.14);
+            addWallLine(targetGroup, 60.2, -45.0, 60.2, -43.6, [], 0.14);
+            addWallLine(targetGroup, 62.4, -45.0, 62.4, -43.6, [], 0.14);
+
+            // --- 5. НИЖНИЙ (ЮЖНЫЙ) РЯД КАБИНЕТОВ: 306, 304, 308, 309 (X [32.4..36.2], Z [-46.8..-27.4]) ---
+            // Стена вдоль южного коридора (X = 36.2, Z [-46.8..-27.4])
+            addWallLine(targetGroup, 36.2, -46.8, 36.2, B4_Z_SOUTH, [
+                { from: -43.6, to: -42.4, type: 'door' }, // Вход в 306
+                { from: -39.4, to: -38.2, type: 'door' }, // Вход в 304
+                { from: -34.6, to: -33.4, type: 'door' }, // Вход в 308
+                { from: -31.8, to: -30.6, type: 'door' }  // Вход в 309
+            ], INNER_T);
+
+            // Поперечные стены между ЛК №2, 306, 304, 308 и 309
+            addWallLine(targetGroup, B4_X_WEST, -46.8, 36.2, -46.8, [
+                { from: 36.2, to: 38.2, type: 'open' }
+            ], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -41.8, 36.2, -41.8, [], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -37.2, 36.2, -37.2, [], INNER_T);
+            addWallLine(targetGroup, B4_X_WEST, -32.4, 36.2, -32.4, [], INNER_T);
+
+            // Дверь в начале южного коридора у ЛК №2 (Z = -46.8, X [36.2..38.2])
+            addWallLine(targetGroup, 36.2, -46.8, 38.2, -46.8, [
+                { from: 36.5, to: 37.9, type: 'door' }
+            ], INNER_T);
+
+            // --- 6. СРЕДНИЙ БЛОК: 305, 312, 311, ДВА С/У, ВИТРАЖ И 310 (X [38.2..48.2], Z [-43.6..-27.4]) ---
+            // Северная капитальная стена ряда 305-312-311 (граница со Вторым светом над актовым залом 204): X = 48.2
+            addWallLine(targetGroup, 48.2, -43.6, 48.2, B4_Z_SOUTH, [], INNER_T);
+
+            // Горизонтальная ось между рядом 305-312-311 и блоком С/У + Витраж + 310: X = 45.0
+            addWallLine(targetGroup, 45.0, -43.6, 45.0, B4_Z_SOUTH, [
+                { from: -43.0, to: -41.8, type: 'door' }, // Вход в 305
+                { from: -31.0, to: -30.0, type: 'door' }, // Вход в тамбур 312/верхней комнаты из 310
+                { from: -29.0, to: -28.0, type: 'door' }  // Вход в 311 из 310
+            ], INNER_T);
+
+            // Вертикальные перегородки в ряду 305 — 312 — подсобка — 311 (X [45.0..48.2])
+            addWallLine(targetGroup, 45.0, -39.6, 48.2, -39.6, [], INNER_T); // Между 305 и 312
+            addWallLine(targetGroup, 45.0, -33.0, 48.2, -33.0, [
+                { from: 45.3, to: 46.4, type: 'door' } // Вход в 312 из малого тамбура
+            ], INNER_T);
+            addWallLine(targetGroup, 46.6, -33.0, 46.6, -29.6, [
+                { from: -31.2, to: -30.0, type: 'door' } // Вход в верхнюю комнату над тамбуром
+            ], INNER_T);
+            addWallLine(targetGroup, 45.0, -29.6, 48.2, -29.6, [], INNER_T); // Стена 311
+
+            // Проходной холл слева от С/У к комнате 305 (X [38.2..45.0], Z [-43.6..-41.4])
+            addWallLine(targetGroup, 38.2, -43.6, 38.2, -41.4, [
+                { from: -43.1, to: -41.9, type: 'door' }
+            ], INNER_T);
+
+            // Блок двух санузлов (С/у) и комнаты над ними (X [38.2..45.0], Z [-41.4..-37.2])
+            // Левая стена блока (Z = -41.4) с дверью в верхнюю подсобку
+            addWallLine(targetGroup, 38.2, -41.4, 45.0, -41.4, [
+                { from: 43.3, to: 44.5, type: 'door' }
+            ], INNER_T);
+            // Горизонтальная стена между подсобкой и двумя С/У (X = 43.0, Z [-41.4..-37.2])
+            addWallLine(targetGroup, 43.0, -41.4, 43.0, -37.2, [], INNER_T);
+            // Центральная перегородка между левым и правым С/У (Z = -39.3, X [38.2..43.0])
+            addWallLine(targetGroup, 38.2, -39.3, 43.0, -39.3, [], 0.14);
+            // Южная стена С/У со входами из коридора (X = 38.2, Z [-41.4..-37.2])
+            addWallLine(targetGroup, 38.2, -41.4, 38.2, -37.2, [
+                { from: -41.1, to: -40.1, type: 'door' },
+                { from: -38.5, to: -37.5, type: 'door' }
+            ], INNER_T);
+            // Внутренние перегородки кабинок С/У
+            addWallLine(targetGroup, 40.6, -41.4, 40.6, -37.2, [
+                { from: -40.9, to: -39.9, type: 'door' },
+                { from: -38.8, to: -37.8, type: 'door' }
+            ], 0.12);
+
+            // Помещение «Витраж» (X [38.2..45.0], Z [-37.2..-31.2]) — замкнутый контур
+            addWallLine(targetGroup, 38.2, -37.2, 45.0, -37.2, [], INNER_T); // Западная стена Витража
+            addWallLine(targetGroup, 38.2, -31.2, 45.0, -31.2, [], INNER_T); // Восточная стена Витража
+            addWallLine(targetGroup, 38.2, -37.2, 38.2, -31.2, [], INNER_T); // Южная стена Витража вдоль коридора
+
+            // --- 7. 3D-ПЛАШКИ ПОМЕЩЕНИЙ 3-ГО ЭТАЖА КОРПУСА 4 (buildingId = 4) ---
+            addRoomLabel(targetGroup, 3, 'Второй свет', 49.2, -55.7, false, true, 4, 1.15);
+            addRoomLabel(targetGroup, 3, 'Второй свет', 57.1, -35.5, false, true, 4, 1.15);
+            addRoomLabel(targetGroup, 3, 'Витраж', 41.6, -34.2, false, true, 4, 0.95);
+
             addRoomLabel(targetGroup, 3, 'ЛК№2', 30.1, -48.3, true, false, 4, 0.85);
             addRoomLabel(targetGroup, 3, 'ЛК№3', 65.2, -47.6, true, false, 4, 0.85);
             addRoomLabel(targetGroup, 3, 'ЛК№1', 40.6, -27.8, true, false, 4, 0.88);
+
+            addRoomLabel(targetGroup, 3, '301', 47.5, -48.7, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 3, '302', 51.6, -45.6, false, false, 4, 0.95);
+            addRoomLabel(targetGroup, 3, '303', 42.5, -45.0, false, false, 4, 0.95);
+            addRoomLabel(targetGroup, 3, '305', 46.6, -41.6, true, false, 4, 0.88);
+            addRoomLabel(targetGroup, 3, '312', 46.6, -36.3, false, false, 4, 0.92);
+            addRoomLabel(targetGroup, 3, '311', 46.6, -28.5, true, false, 4, 0.85);
+            addRoomLabel(targetGroup, 3, '310', 43.6, -29.3, true, false, 4, 0.88);
+
+            addRoomLabel(targetGroup, 3, 'С/У', 41.8, -40.4, true, false, 4, 0.72);
+            addRoomLabel(targetGroup, 3, 'С/У', 41.8, -38.2, true, false, 4, 0.72);
+
+            addRoomLabel(targetGroup, 3, '306', 34.3, -44.3, true, false, 4, 0.90);
+            addRoomLabel(targetGroup, 3, '304', 34.3, -39.5, true, false, 4, 0.90);
+            addRoomLabel(targetGroup, 3, '308', 34.3, -34.8, true, false, 4, 0.90);
+            addRoomLabel(targetGroup, 3, '309', 34.3, -29.9, true, false, 4, 0.90);
         }
