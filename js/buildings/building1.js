@@ -45,74 +45,94 @@
             }
 
             // 3. Центральное ядро: Лифты и Санузлы (X [-1.2..8.6], Z [-4.0..4.0])
+            // Северная стена ядра со входом в северный С/У
             addWallLine(targetGroup, -1.2, -4.0, 8.6, -4.0, [
-                { from: 5.2, to: 6.1, type: 'door' }
+                { from: 4.9, to: 5.9, type: 'door' }
             ], INNER_T);
 
+            // Западная стена ядра: двустворчатый вход в лифтовой холл
             addWallLine(targetGroup, -1.2, -4.0, -1.2, 4.0, [
-                { from: 1.0, to: 2.8, type: 'door' }
+                { from: 0.8, to: 2.6, type: 'door' }
             ], INNER_T);
 
+            // Южная стена ядра со входом в южный С/У
             addWallLine(targetGroup, -1.2, 4.0, 8.6, 4.0, [
-                { from: 5.3, to: 6.3, type: 'door' }
+                { from: 4.9, to: 5.9, type: 'door' }
             ], INNER_T);
 
+            // Восточная стена ядра (разделяет С/У и лестничный блок)
             addWallLine(targetGroup, 8.6, -4.0, 8.6, 4.0, [], INNER_T);
 
-            // Левая шахта лифта
-            addWallLine(targetGroup, 1.4, -4.0, 1.4, -0.5, [], INNER_T);
-            addWallLine(targetGroup, -1.2, -0.5, 1.4, -0.5, [
-                { from: -0.6, to: 0.6, type: 'door' }
+            // --- ШАХТЫ ЛИФТОВ ---
+            // Левый грузопассажирский лифт (X [-0.9..1.4], Z [-3.8..-1.0])
+            addWallLine(targetGroup, -0.9, -3.8, 1.4, -3.8, [], INNER_T);
+            addWallLine(targetGroup, -0.9, -3.8, -0.9, -1.0, [], INNER_T);
+            addWallLine(targetGroup, 1.4, -3.8, 1.4, -1.0, [], INNER_T);
+            addWallLine(targetGroup, -0.9, -1.0, 1.4, -1.0, [
+                { from: -0.2, to: 1.0, type: 'door' }
             ], INNER_T);
-            buildElevatorShaftCross(targetGroup, -0.85, -3.5, 1.05, -0.8);
+            buildElevatorShaftCross(targetGroup, -0.85, -3.7, 1.35, -1.1);
 
-            // Правая шахта лифта
-            addWallLine(targetGroup, 4.8, -4.0, 4.8, -0.5, [], INNER_T);
-            addWallLine(targetGroup, 2.1, -3.0, 4.8, -3.0, [], INNER_T);
-            addWallLine(targetGroup, 2.1, -3.0, 2.1, -0.5, [], INNER_T);
-            addWallLine(targetGroup, 1.4, -0.5, 4.8, -0.5, [
-                { from: 2.7, to: 3.9, type: 'door' }
+            // Правый пассажирский лифт (X [2.0..4.6], Z [-3.3..-1.0])
+            addWallLine(targetGroup, 2.0, -3.3, 4.6, -3.3, [], INNER_T);
+            addWallLine(targetGroup, 2.0, -3.3, 2.0, -1.0, [], INNER_T);
+            addWallLine(targetGroup, 4.6, -3.3, 4.6, -1.0, [], INNER_T);
+            addWallLine(targetGroup, 2.0, -1.0, 4.6, -1.0, [
+                { from: 2.5, to: 3.7, type: 'door' }
             ], INNER_T);
-            buildElevatorShaftCross(targetGroup, 2.35, -2.75, 4.45, -0.8);
+            buildElevatorShaftCross(targetGroup, 2.05, -3.2, 4.55, -1.1);
 
-            // Малый пилон между шахтами
-            addWallLine(targetGroup, 1.4, -0.5, 1.4, -0.15, [], 0.12);
-            addWallLine(targetGroup, 1.9, -0.5, 1.9, -0.15, [], 0.12);
-            addWallLine(targetGroup, 1.4, -0.15, 1.9, -0.15, [], 0.12);
+            // Пилон между шахтами лифтов
+            addWallLine(targetGroup, 1.4, -1.0, 2.0, -1.0, [], 0.12);
+            addWallLine(targetGroup, 1.4, -1.0, 1.4, -0.6, [], 0.12);
+            addWallLine(targetGroup, 2.0, -1.0, 2.0, -0.6, [], 0.12);
+            addWallLine(targetGroup, 1.4, -0.6, 2.0, -0.6, [], 0.12);
 
-            // Санузлы (С/У) в правой части ядра
-            addWallLine(targetGroup, 4.8, -0.5, 8.6, -0.5, [], INNER_T);
-            addWallLine(targetGroup, 5.1, -0.5, 5.1, 4.0, [], INNER_T);
+            // Разделительная капитальная стена между лифтовым холлом и санузлами
+            addWallLine(targetGroup, 4.8, -4.0, 4.8, 4.0, [], INNER_T);
 
-            addWallLine(targetGroup, 6.2, -2.3, 6.2, -0.5, [], 0.12);
-            addWallLine(targetGroup, 7.4, -2.3, 7.4, -0.5, [], 0.12);
+            // --- САНИТАРНЫЙ БЛОК (С/У) ---
+            // Центральная стена между северным и южным С/У
+            addWallLine(targetGroup, 4.8, 0.0, 8.6, 0.0, [], INNER_T);
 
-            addWallLine(targetGroup, 5.1, 2.3, 8.6, 2.3, [], 0.12);
-            addWallLine(targetGroup, 6.7, -0.5, 6.7, 2.3, [], 0.12);
-            addWallLine(targetGroup, 6.7, 1.0, 8.6, 1.0, [], 0.12);
+            // Северный С/У: предбанник и 2 кабинки
+            addWallLine(targetGroup, 6.4, -4.0, 6.4, 0.0, [
+                { from: -3.6, to: -2.6, type: 'door' },
+                { from: -1.6, to: -0.6, type: 'door' }
+            ], 0.12);
+            addWallLine(targetGroup, 6.4, -2.0, 8.6, -2.0, [], 0.12);
 
-            // 4. Две дублирующие лестницы ЛК№1 и ЛК№2
-            addWallLine(targetGroup, 8.6, -3.5, 16.0, -3.5, [
-                { from: 9.0, to: 10.1, type: 'door' }
+            // Южный С/У: предбанник и 2 кабинки
+            addWallLine(targetGroup, 6.4, 0.0, 6.4, 4.0, [
+                { from: 0.6, to: 1.6, type: 'door' },
+                { from: 2.6, to: 3.6, type: 'door' }
+            ], 0.12);
+            addWallLine(targetGroup, 6.4, 2.0, 8.6, 2.0, [], 0.12);
+
+            // 4. Две параллельные лестничные клетки ЛК№1 и ЛК№2
+            // Северная стена ЛК№1 со входом из северного коридора
+            addWallLine(targetGroup, 8.6, -3.8, 16.0, -3.8, [
+                { from: 8.8, to: 10.0, type: 'door' }
             ], INNER_T);
 
-            addWallLine(targetGroup, 8.6, 0.15, 16.0, 0.15, [], INNER_T);
+            // Центральная противопожарная разделительная стена между ЛК№1 и ЛК№2
+            addWallLine(targetGroup, 8.6, 0.0, 16.0, 0.0, [], INNER_T);
 
-            addWallLine(targetGroup, 8.6, 3.8, 12.5, 3.8, [
-                { from: 9.0, to: 10.1, type: 'door' }
+            // Южная стена ЛК№2 со входом из южного коридора
+            addWallLine(targetGroup, 8.6, 3.8, 16.0, 3.8, [
+                { from: 8.8, to: 10.0, type: 'door' }
             ], INNER_T);
 
-            buildStaircaseUnit(targetGroup, -3.5, 0.15, -1.68, true);
-            buildStaircaseUnit(targetGroup, 0.15, 3.8, 1.98, false);
+            // Лестничные марши с входными и межэтажными площадками
+            buildStaircaseUnit(targetGroup, -3.8, 0.0, -1.9, true);
+            buildStaircaseUnit(targetGroup, 0.0, 3.8, 1.9, false);
 
             // Общие плашки ядра и лестниц
-            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.5, -1.6, true);
-            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.9, 1.0, true);
-            if (floorNum === 6) {
-                addRoomLabel3D(targetGroup, floorNum, 'С/У', 7.2, 3.15, true);
-            }
-            addRoomLabel3D(targetGroup, floorNum, 'ЛК№1', 14.9, -1.68, true);
-            addRoomLabel3D(targetGroup, floorNum, 'ЛК№2', 14.9, 1.98, true);
+            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.6, -2.0, true);
+            addRoomLabel3D(targetGroup, floorNum, 'С/У', 5.6, 2.0, true);
+            addRoomLabel3D(targetGroup, floorNum, 'ЛК№1', 9.4, -1.9, true);
+            addRoomLabel3D(targetGroup, floorNum, 'ЛК№2', 9.4, 1.9, true);
+            addRoomLabel3D(targetGroup, floorNum, 'Лифтовой\nхолл', 1.8, 1.5, false, true);
         }
 
         function buildFloor7(targetGroup) {

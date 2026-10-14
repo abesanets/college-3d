@@ -346,7 +346,7 @@ function updateLabelsVisibility() {
             return;
         }
 
-        if (STATE.mode === 'sideBySide') {
+        if (STATE.mode === 'sideBySide' || (STATE.exploded && STATE.explodeGap > 0.2)) {
             item.mesh.visible = true;
             return;
         }
@@ -472,7 +472,7 @@ function updateWallHeights() {
     });
 
     labelSprites.forEach(item => {
-        item.mesh.position.y = STATE.wallHeight * 0.65;
+        item.mesh.position.y = 0.02;
     });
 
     recalcTargetPositions();

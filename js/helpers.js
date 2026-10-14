@@ -213,15 +213,18 @@ function addRoomLabel3D(targetGroup, floorNum, text, x, z, isSmall = false, isWi
     const mat = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
-        depthTest: false,
+        depthTest: true,
         depthWrite: false,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
         side: THREE.DoubleSide
     });
 
     const mesh = new THREE.Mesh(geom, mat);
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(x, STATE.wallHeight * 0.65, z);
-    mesh.renderOrder = 999;
+    // Плашка точно прилипает к полу комнаты своего этажа
+    mesh.position.set(x, 0.02, z);
     mesh.userData.isInterior = true;
     targetGroup.add(mesh);
 
@@ -281,11 +284,11 @@ function registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, yOffse
 }
 
 function buildStaircaseUnit(targetGroup, zTop, zBottom, zMid, isUpperStaircase) {
-    addWallLine(targetGroup, 10.6, zMid, 13.8, zMid, [], 0.08);
+    addWallLine(targetGroup, 10.2, zMid, 14.6, zMid, [], 0.08);
 
-    const stepsCount = 9;
-    const startX = 10.6;
-    const endX = 13.8;
+    const stepsCount = 10;
+    const startX = 10.2;
+    const endX = 14.6;
     const stepDepth = (endX - startX) / stepsCount;
 
     const flights = [
@@ -306,6 +309,10 @@ function buildStaircaseUnit(targetGroup, zTop, zBottom, zMid, isUpperStaircase) 
             registerDynamicStairStep(targetGroup, geom, sx, cz, heightRatio, 0);
         }
     });
+
+    // Межэтажная разворотная площадка у наружной стены
+    const landingGeom = new THREE.BoxGeometry(1.4, 1, Math.abs(zBottom - zTop));
+    registerDynamicStairStep(targetGroup, landingGeom, 15.3, (zTop + zBottom) / 2, 0.26, 0);
 }
 
 function buildCorridorStepsRight(targetGroup) {
