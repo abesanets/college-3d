@@ -551,8 +551,13 @@ function recalcTargetPositions() {
 
 function updateWallHeights() {
     wallMeshes.forEach(m => {
-        m.scale.y = STATE.wallHeight + WALL_SINK;
-        m.position.y = (STATE.wallHeight - WALL_SINK) / 2;
+        if (m.userData && m.userData.isColumn) {
+            m.scale.y = STATE.wallHeight;
+            m.position.y = STATE.wallHeight / 2;
+        } else {
+            m.scale.y = STATE.wallHeight + WALL_SINK;
+            m.position.y = (STATE.wallHeight - WALL_SINK) / 2;
+        }
     });
 
     doorMeshes.forEach(m => {
