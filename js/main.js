@@ -135,25 +135,28 @@ function buildStairValidationAxes() {
 }
 
 function updateStairValidationAxes() {
-    const show = STATE.showStairAxes && STATE.mode === 'all';
+    const show = STATE.showStairAxes && (STATE.mode === 'all' || STATE.mode === 'slice');
     stairValidationGroup.visible = show;
     if (!show) return;
 
     const botY = floorGroups[1].position.y;
+    const maxActiveF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : 7;
 
     stairValidationItems.forEach(item => {
+        const effectiveMax = Math.min(item.maxFloor, maxActiveF);
         const visibleByBuilding =
-            STATE.buildingFilter === 'both' ||
+            (effectiveMax >= 1) &&
+            (STATE.buildingFilter === 'both' ||
             (STATE.buildingFilter === '1' && item.bldg === 1) ||
             (STATE.buildingFilter === '2' && item.bldg === 2) ||
             (STATE.buildingFilter === '3' && item.bldg === 3) ||
-            (STATE.buildingFilter === '4' && item.bldg === 4);
+            (STATE.buildingFilter === '4' && item.bldg === 4));
 
         item.centerLine.visible = visibleByBuilding;
         item.wireframeBox.visible = visibleByBuilding;
         if (!visibleByBuilding) return;
 
-        const topY = floorGroups[item.maxFloor].position.y + STATE.wallHeight;
+        const topY = floorGroups[effectiveMax].position.y + STATE.wallHeight;
         const totalH = Math.max(0.5, topY - botY);
 
         const posAttr = item.centerLine.geometry.attributes.position;
@@ -206,24 +209,27 @@ function buildAlignmentGuides() {
 }
 
 function updateAlignmentGuides() {
-    const show = STATE.showGuides && STATE.mode === 'all';
+    const show = STATE.showGuides && (STATE.mode === 'all' || STATE.mode === 'slice');
     alignmentGuidesGroup.visible = show;
     if (!show) return;
 
     const botY = floorGroups[1].position.y;
+    const maxActiveF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : 7;
 
     guideLines.forEach(item => {
+        const effectiveMax = Math.min(item.maxFloor, maxActiveF);
         const visibleByBuilding =
-            STATE.buildingFilter === 'both' ||
+            (effectiveMax >= 1) &&
+            (STATE.buildingFilter === 'both' ||
             (STATE.buildingFilter === '1' && item.bldg === 1) ||
             (STATE.buildingFilter === '2' && item.bldg === 2) ||
             (STATE.buildingFilter === '3' && item.bldg === 3) ||
-            (STATE.buildingFilter === '4' && item.bldg === 4);
+            (STATE.buildingFilter === '4' && item.bldg === 4));
 
         item.line.visible = visibleByBuilding;
         if (!visibleByBuilding) return;
 
-        const topY = floorGroups[item.maxFloor].position.y + STATE.wallHeight;
+        const topY = floorGroups[effectiveMax].position.y + STATE.wallHeight;
         const posAttr = item.line.geometry.attributes.position;
         posAttr.setXYZ(0, item.gx, botY, item.gz);
         posAttr.setXYZ(1, item.gx, topY, item.gz);
@@ -340,9 +346,14 @@ function updateLabelsVisibility() {
             return;
         }
 
-        if (STATE.mode !== 'all' && STATE.mode !== 'sideBySide') {
+        if (STATE.mode !== 'all' && STATE.mode !== 'slice' && STATE.mode !== 'sideBySide') {
             const activeFloor = parseInt(STATE.mode, 10);
             item.mesh.visible = (item.floor === activeFloor);
+            return;
+        }
+
+        if (STATE.mode === 'slice' && item.floor > STATE.sliceMaxFloor) {
+            item.mesh.visible = false;
             return;
         }
 
@@ -365,7 +376,7 @@ function updateLabelsVisibility() {
 // а внешние несущие стены (фасад) и плиты перекрытий ВСЕГДА остаются видимыми!
 // ==========================================
 function updateFloorsInteriorVisibility() {
-    const isStack = (STATE.mode === 'all') && (!STATE.exploded || STATE.explodeGap < 0.2) && (STATE.slabOpacity > 0.85);
+    const isStack = (STATE.mode === 'all' || STATE.mode === 'slice') && (!STATE.exploded || STATE.explodeGap < 0.2) && (STATE.slabOpacity > 0.85);
 
     function setGroupInteriorVisibility(group, isTopFloor) {
         if (!group) return;
@@ -390,21 +401,22 @@ function updateFloorsInteriorVisibility() {
         });
     }
 
-    // Корпус 1: верхний этаж 7 (на этажах 1–6 внешние стены видны, скрыты только внутренние перегородки)
+    const maxF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : 7;
+    // Корпус 1: верхний отображаемый этаж
     for (let f = 1; f <= 7; f++) {
-        setGroupInteriorVisibility(bldg1FloorGroups[f], f === 7);
+        setGroupInteriorVisibility(bldg1FloorGroups[f], f === Math.min(7, maxF));
     }
-    // Корпус 2: верхний этаж 3 (на этажах 1–2 внешние стены видны, скрыты только внутренние)
+    // Корпус 2: верхний отображаемый этаж
     for (let f = 1; f <= 3; f++) {
-        setGroupInteriorVisibility(bldg2FloorGroups[f], f === 3);
+        setGroupInteriorVisibility(bldg2FloorGroups[f], f === Math.min(3, maxF));
     }
-    // Корпус 3: верхний этаж 2 (на этаже 1 внешние стены видны, скрыты только внутренние)
+    // Корпус 3: верхний отображаемый этаж
     for (let f = 1; f <= 2; f++) {
-        setGroupInteriorVisibility(bldg3FloorGroups[f], f === 2);
+        setGroupInteriorVisibility(bldg3FloorGroups[f], f === Math.min(2, maxF));
     }
-    // Корпус 4: верхний этаж 3 (на этажах 1–2 внешние стены видны, скрыты только внутренние)
+    // Корпус 4: верхний отображаемый этаж
     for (let f = 1; f <= 3; f++) {
-        setGroupInteriorVisibility(bldg4FloorGroups[f], f === 3);
+        setGroupInteriorVisibility(bldg4FloorGroups[f], f === Math.min(3, maxF));
     }
 }
 
@@ -422,9 +434,10 @@ function recalcTargetPositions() {
         bldg4FloorGroups[f].visible = showB4 && (f <= 3);
     }
 
-    if (STATE.mode === 'all') {
+    if (STATE.mode === 'all' || STATE.mode === 'slice') {
+        const maxF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : 7;
         for (let f = 1; f <= 7; f++) {
-            floorGroups[f].visible = true;
+            floorGroups[f].visible = (f <= maxF);
             STATE.targetPos[f].set(0, stepH * (f - 1), 0);
         }
     } else if (STATE.mode === 'sideBySide') {

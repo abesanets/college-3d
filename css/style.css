@@ -184,3 +184,15 @@ input[type="range"]::-webkit-slider-thumb:active {
     background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.08), transparent);
     margin: 2px 0;
 }
+
+/* Скрытие интерфейса */
+.ui-overlay {
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+}
+
+body.ui-hidden .ui-overlay {
+    opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: scale(0.98);
+}

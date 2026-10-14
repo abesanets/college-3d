@@ -66,7 +66,8 @@ const B4_LK1_X1 = 38.8, B4_LK1_X2 = 42.4, B4_LK1_Z1 = -31.2, B4_LK1_Z2 = -24.4;
 
 const STATE = {
     buildingFilter: 'both',    // 'both' | '1' | '2' | '3' | '4'
-    mode: 'all',               // 'all' | '7' | '6' | '5' | '4' | '3' | '2' | '1' | 'sideBySide'
+    mode: 'all',               // 'all' | 'slice' | '7' | '6' | '5' | '4' | '3' | '2' | '1' | 'sideBySide'
+    sliceMaxFloor: 7,          // 1..7 (верхняя граница видимых этажей при срезе)
     exploded: false,
     explodeGap: 0.0,
     wallHeight: BASE_WALL_HEIGHT,

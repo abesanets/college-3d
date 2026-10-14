@@ -6,7 +6,7 @@ function updateExplodeButtonStyle() {
     const btnExplode = document.getElementById('btn-explode');
     if (!btnExplode) return;
 
-    if (STATE.exploded && STATE.mode === 'all' && STATE.explodeGap > 0.2) {
+    if (STATE.exploded && (STATE.mode === 'all' || STATE.mode === 'slice') && STATE.explodeGap > 0.2) {
         btnExplode.classList.add('explode-btn-active');
         btnExplode.innerHTML = '<span class="flex items-center justify-center gap-1.5"><svg class="w-3.5 h-3.5 text-slate-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg> Собрать этажи</span>';
     } else {
@@ -28,13 +28,50 @@ function setBuildingFilter(bFilter) {
     updateStairValidationAxes();
 }
 
+function setSliceFloor(newFloor) {
+    newFloor = Math.max(1, Math.min(7, Math.round(newFloor)));
+    STATE.sliceMaxFloor = newFloor;
+
+    const sliderSlice = document.getElementById('slider-slice');
+    const valSlice = document.getElementById('slice-val');
+    if (sliderSlice) sliderSlice.value = newFloor;
+    if (valSlice) valSlice.textContent = newFloor === 1 ? '1 эт.' : `1–${newFloor} эт.`;
+
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+
+    const subtitle = document.getElementById('status-subtitle');
+
+    if (newFloor === 7) {
+        STATE.mode = 'all';
+        const btnAll = document.getElementById('btn-mode-all');
+        if (btnAll) btnAll.classList.add('active');
+        if (subtitle) subtitle.textContent = 'Все этажи комплекса: Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.) + Корпус 4 (1–3 эт.)';
+    } else {
+        STATE.mode = 'slice';
+        if (subtitle) {
+            const cutInfo = (newFloor === 6) ? '7-й этаж срезан' : `этажи ${(newFloor + 1)}–7 срезаны`;
+            subtitle.textContent = `Срез сверху: отображаются этажи 1–${newFloor} (${cutInfo})`;
+        }
+    }
+
+    recalcTargetPositions();
+    updateAlignmentGuides();
+    updateStairValidationAxes();
+    updateExplodeButtonStyle();
+}
+
 function setMode(newMode) {
     STATE.mode = newMode;
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
 
     const subtitle = document.getElementById('status-subtitle');
+    const sliderSlice = document.getElementById('slider-slice');
+    const valSlice = document.getElementById('slice-val');
 
     if (newMode === 'all') {
+        STATE.sliceMaxFloor = 7;
+        if (sliderSlice) sliderSlice.value = 7;
+        if (valSlice) valSlice.textContent = '1–7 эт.';
         const btnAll = document.getElementById('btn-mode-all');
         if (btnAll) btnAll.classList.add('active');
         if (subtitle) subtitle.textContent = 'Все этажи комплекса: Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.) + Корпус 4 (1–3 эт.)';
@@ -53,6 +90,8 @@ function setMode(newMode) {
     }
 
     recalcTargetPositions();
+    updateAlignmentGuides();
+    updateStairValidationAxes();
     updateExplodeButtonStyle();
 }
 
@@ -71,14 +110,20 @@ function setupUI() {
         document.getElementById('btn-mode-' + f)?.addEventListener('click', () => setMode(String(f)));
     }
 
+    // Срез этажей сверху вниз
+    const sliderSlice = document.getElementById('slider-slice');
+    sliderSlice?.addEventListener('input', e => {
+        setSliceFloor(parseInt(e.target.value, 10));
+    });
+
     // Взрывной эффект (разнос этажей)
     const btnExplode = document.getElementById('btn-explode');
     const sliderExplode = document.getElementById('slider-explode');
     const valExplode = document.getElementById('explode-val');
 
     btnExplode?.addEventListener('click', () => {
-        if (STATE.mode !== 'all') {
-            setMode('all');
+        if (STATE.mode !== 'all' && STATE.mode !== 'slice') {
+            setSliceFloor(STATE.sliceMaxFloor || 7);
             STATE.exploded = true;
         } else {
             STATE.exploded = !STATE.exploded;
@@ -102,8 +147,8 @@ function setupUI() {
         STATE.explodeGap = v;
         STATE.exploded = v > 0.1;
         if (valExplode) valExplode.textContent = v.toFixed(1) + ' м';
-        if (STATE.mode !== 'all') {
-            setMode('all');
+        if (STATE.mode !== 'all' && STATE.mode !== 'slice') {
+            setSliceFloor(STATE.sliceMaxFloor || 7);
         } else {
             recalcTargetPositions();
             updateExplodeButtonStyle();
@@ -172,7 +217,10 @@ function setupUI() {
     document.getElementById('btn-view-3d')?.addEventListener('click', () => {
         const cx = getActiveCenterX();
         const cz = getActiveCenterZ();
-        const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 3 : 3.0;
+        const maxF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : (STATE.mode === 'all' ? 7 : 1);
+        const midY = ((STATE.mode === 'all' || STATE.mode === 'slice') && STATE.exploded)
+            ? (STATE.wallHeight + STATE.explodeGap) * (maxF / 2)
+            : (STATE.wallHeight * 0.45 * maxF);
         STATE.targetCamPos = new THREE.Vector3(cx - 24, 56 + midY, cz + 56);
         STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
     });
@@ -188,15 +236,31 @@ function setupUI() {
     document.getElementById('btn-view-side')?.addEventListener('click', () => {
         const cx = getActiveCenterX();
         const cz = getActiveCenterZ();
-        const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 3 : 3.5;
+        const maxF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : (STATE.mode === 'all' ? 7 : 1);
+        const midY = ((STATE.mode === 'all' || STATE.mode === 'slice') && STATE.exploded)
+            ? (STATE.wallHeight + STATE.explodeGap) * (maxF / 2)
+            : (STATE.wallHeight * 0.5 * maxF);
         STATE.targetCamPos = new THREE.Vector3(cx, midY + 14, cz + 72);
         STATE.targetControlsCenter = new THREE.Vector3(cx, midY, cz);
     });
 
     document.getElementById('btn-view-305')?.addEventListener('click', () => {
-        const midY = (STATE.mode === 'all' && STATE.exploded) ? (STATE.wallHeight + STATE.explodeGap) * 1.5 : 3.5;
+        const maxF = STATE.mode === 'slice' ? STATE.sliceMaxFloor : (STATE.mode === 'all' ? 7 : 1);
+        const midY = ((STATE.mode === 'all' || STATE.mode === 'slice') && STATE.exploded)
+            ? (STATE.wallHeight + STATE.explodeGap) * Math.min(2, maxF) * 0.75
+            : 3.5;
         STATE.targetCamPos = new THREE.Vector3(36.0, midY + 34, -2.0);
         STATE.targetControlsCenter = new THREE.Vector3(36.0, midY, -28.0);
+    });
+
+    // Горячая клавиша H / Р — скрыть/показать весь интерфейс (с поддержкой обеих раскладок)
+    window.addEventListener('keydown', e => {
+        if (e.target && (e.target.tagName === 'TEXTAREA' || (e.target.tagName === 'INPUT' && e.target.type !== 'range' && e.target.type !== 'checkbox'))) {
+            return;
+        }
+        if (e.code === 'KeyH' || e.key === 'h' || e.key === 'H' || e.key === 'р' || e.key === 'Р') {
+            document.body.classList.toggle('ui-hidden');
+        }
     });
 
     updateExplodeButtonStyle();

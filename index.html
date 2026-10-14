@@ -18,7 +18,7 @@
     <div id="canvas-container"></div>
 
     <!-- Верхняя левая шапка -->
-    <div class="fixed top-4 left-4 z-20 glass-panel rounded-xl px-4 py-3 flex items-center gap-3">
+    <div class="ui-overlay fixed top-4 left-4 z-20 glass-panel rounded-xl px-4 py-3 flex items-center gap-3">
         <div class="w-8 h-8 rounded-lg bg-slate-800/90 border border-slate-700/80 flex items-center justify-center text-slate-300 shadow-sm flex-shrink-0">
             <svg class="w-4 h-4 text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Правая панель контроллеров -->
-    <div class="fixed top-4 right-4 z-20 glass-panel custom-scroll rounded-xl p-4 w-80 max-h-[94vh] overflow-y-auto flex flex-col gap-3 text-xs">
+    <div class="ui-overlay fixed top-4 right-4 z-20 glass-panel custom-scroll rounded-xl p-4 w-80 max-h-[94vh] overflow-y-auto flex flex-col gap-3 text-xs">
         
         <!-- Выбор корпуса -->
         <div>
@@ -83,6 +83,15 @@
                 <button id="btn-mode-3" class="mode-btn btn-interactive bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-1 rounded-lg border border-slate-700/80 text-center">3</button>
                 <button id="btn-mode-2" class="mode-btn btn-interactive bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-1 rounded-lg border border-slate-700/80 text-center">2</button>
                 <button id="btn-mode-1" class="mode-btn btn-interactive bg-slate-800/80 hover:bg-slate-700 text-slate-200 font-medium py-1.5 px-1 rounded-lg border border-slate-700/80 text-center">1</button>
+            </div>
+
+            <!-- Срез сверху вниз -->
+            <div class="mt-2.5">
+                <div class="flex justify-between items-center mb-1 text-[11px]">
+                    <span class="text-slate-400 font-semibold uppercase tracking-wider">Срез сверху вниз</span>
+                    <span id="slice-val" class="text-slate-300 font-mono text-[11px] bg-slate-800/80 border border-slate-700/60 px-1.5 py-0.5 rounded">1–7 эт.</span>
+                </div>
+                <input id="slider-slice" type="range" min="1" max="7" step="1" value="7" class="w-full cursor-pointer">
             </div>
         </div>
 
@@ -189,31 +198,14 @@
                 </label>
             </div>
         </div>
-
-        <hr class="panel-divider">
-
-        <!-- Легенда -->
-        <div class="flex flex-col gap-1.5 text-[11px] text-slate-400">
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-sm bg-[#eceff3] border border-slate-500/80 inline-block shadow-xs"></span>
-                <span>Стены и несущие перегородки</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-sm bg-[#8c96a6] border border-slate-600/80 inline-block shadow-xs"></span>
-                <span>Дверные блоки</span>
-            </div>
-            <div class="flex items-center gap-2">
-                <span class="w-2.5 h-2.5 rounded-sm bg-[#cbd2dc] border border-slate-600/80 inline-block shadow-xs"></span>
-                <span>Лифты и лестничные клетки</span>
-            </div>
-        </div>
     </div>
 
     <!-- Информационная подсказка по управлению внизу экрана -->
-    <div class="fixed bottom-4 left-4 z-20 glass-panel rounded-lg px-4 py-2 text-xs text-slate-400 flex flex-wrap items-center gap-4">
+    <div class="ui-overlay fixed bottom-4 left-4 z-20 glass-panel rounded-lg px-4 py-2 text-xs text-slate-400 flex flex-wrap items-center gap-4">
         <span><strong class="text-slate-200 font-medium">ЛКМ:</strong> Вращение</span>
         <span><strong class="text-slate-200 font-medium">ПКМ / Shift+ЛКМ:</strong> Панорама</span>
         <span><strong class="text-slate-200 font-medium">Колёсико:</strong> Зум к курсору</span>
+        <span><strong class="text-slate-200 font-medium">H:</strong> Скрыть интерфейс</span>
     </div>
 
     <!-- Подключение JS модулей -->
