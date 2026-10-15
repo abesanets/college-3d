@@ -2,6 +2,9 @@
 
 Interactive WebGL 3D architectural viewer for a 4-building college complex.
 
+## Live Demo
+https://abesanets.github.io/college-3d/
+
 ## Requirements
 - Modern web browser with WebGL support
 - HTTP server or local browser file access
