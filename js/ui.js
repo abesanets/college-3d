@@ -17,9 +17,10 @@ function updateExplodeButtonStyle() {
 
 function setBuildingFilter(bFilter) {
     STATE.buildingFilter = bFilter;
-    document.querySelectorAll('.bldg-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.bldg-btn, .mobile-bldg-btn').forEach(b => b.classList.remove('active'));
     const targetBtn = document.getElementById('btn-bldg-' + bFilter);
     if (targetBtn) targetBtn.classList.add('active');
+    document.querySelectorAll(`.mobile-bldg-btn[data-bldg="${bFilter}"]`).forEach(b => b.classList.add('active'));
 
     // Камера сохраняет текущую точку обзора и зум пользователя без сброса
 
@@ -64,7 +65,7 @@ function setSliceFloor(newFloor) {
 
 function setMode(newMode) {
     STATE.mode = newMode;
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.mode-btn, .mobile-floor-btn').forEach(b => b.classList.remove('active'));
 
     const subtitle = document.getElementById('status-subtitle');
     const sliderSlice = document.getElementById('slider-slice');
@@ -76,6 +77,7 @@ function setMode(newMode) {
         if (valSlice) valSlice.textContent = '1–7 эт.';
         const btnAll = document.getElementById('btn-mode-all');
         if (btnAll) btnAll.classList.add('active');
+        document.querySelectorAll('.mobile-floor-btn[data-mode="all"]').forEach(b => b.classList.add('active'));
         if (subtitle) subtitle.textContent = 'Все этажи комплекса: Корпус 1 (1–7 эт.) + Корпус 2 (1–3 эт.) + Корпус 3 (1–2 эт.) + Корпус 4 (1–3 эт.)';
         // Сохраняем положение камеры без сброса
     } else if (newMode === 'sideBySide') {
@@ -87,6 +89,7 @@ function setMode(newMode) {
     } else {
         const btnFloor = document.getElementById('btn-mode-' + newMode);
         if (btnFloor) btnFloor.classList.add('active');
+        document.querySelectorAll(`.mobile-floor-btn[data-mode="${newMode}"]`).forEach(b => b.classList.add('active'));
         if (subtitle) subtitle.textContent = FLOOR_DESCRIPTIONS[newMode] || '';
         // Сохраняем положение камеры без сброса
     }
@@ -506,6 +509,9 @@ function setupUI() {
         }
     });
 
+    // 10. Обработчики мобильного интерфейса
+    setupMobileUI();
+
     if (typeof updateWallHeights === 'function') updateWallHeights();
     if (typeof updateEdgesVisibility === 'function') updateEdgesVisibility();
     if (typeof updateAlignmentGuides === 'function') updateAlignmentGuides();
@@ -514,5 +520,121 @@ function setupUI() {
     if (typeof updateRoofsVisibility === 'function') updateRoofsVisibility();
     if (typeof updateTerritoryVisibility === 'function') updateTerritoryVisibility();
     updateExplodeButtonStyle();
+}
+
+// ==========================================
+// ЛОГИКА МОБИЛЬНОГО РЕЖИМА И ШТОРКИ
+// ==========================================
+
+function openMobilePanel() {
+    const panel = document.getElementById('control-panel');
+    const backdrop = document.getElementById('panel-backdrop');
+    if (panel) {
+        panel.classList.remove('translate-y-full');
+        panel.classList.add('translate-y-0');
+    }
+    if (backdrop) {
+        backdrop.classList.remove('opacity-0', 'pointer-events-none');
+        backdrop.classList.add('opacity-100', 'pointer-events-auto');
+    }
+}
+
+function closeMobilePanel() {
+    const panel = document.getElementById('control-panel');
+    const backdrop = document.getElementById('panel-backdrop');
+    if (panel) {
+        panel.classList.remove('translate-y-0');
+        panel.classList.add('translate-y-full');
+        panel.style.transform = '';
+    }
+    if (backdrop) {
+        backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+        backdrop.classList.add('opacity-0', 'pointer-events-none');
+    }
+}
+
+function toggleMobilePanel() {
+    const panel = document.getElementById('control-panel');
+    if (panel && panel.classList.contains('translate-y-full')) {
+        openMobilePanel();
+    } else {
+        closeMobilePanel();
+    }
+}
+
+function setupMobileUI() {
+    // Открытие / закрытие мобильной шторки
+    document.getElementById('btn-toggle-menu')?.addEventListener('click', toggleMobilePanel);
+    document.getElementById('btn-close-panel')?.addEventListener('click', closeMobilePanel);
+    document.getElementById('panel-backdrop')?.addEventListener('click', closeMobilePanel);
+
+    // Свайп вниз по шапке/ручке мобильной шторки для закрытия
+    const drawerHandle = document.getElementById('drawer-handle');
+    const controlPanel = document.getElementById('control-panel');
+    if (drawerHandle && controlPanel) {
+        let startY = 0;
+        let currentY = 0;
+        drawerHandle.addEventListener('touchstart', e => {
+            startY = e.touches[0].clientY;
+            currentY = startY;
+        }, { passive: true });
+
+        drawerHandle.addEventListener('touchmove', e => {
+            currentY = e.touches[0].clientY;
+            const diff = currentY - startY;
+            if (diff > 0) {
+                controlPanel.style.transform = `translateY(${diff}px)`;
+            }
+        }, { passive: true });
+
+        drawerHandle.addEventListener('touchend', () => {
+            const diff = currentY - startY;
+            controlPanel.style.transform = '';
+            if (diff > 70) {
+                closeMobilePanel();
+            }
+        }, { passive: true });
+    }
+
+    // Кнопки быстрого выбора корпуса на мобильной нижней панели
+    document.querySelectorAll('.mobile-bldg-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const bldg = btn.getAttribute('data-bldg');
+            if (bldg) setBuildingFilter(bldg);
+        });
+    });
+
+    // Кнопки быстрого выбора этажа на мобильной нижней панели
+    document.querySelectorAll('.mobile-floor-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const mode = btn.getAttribute('data-mode');
+            if (mode) setMode(mode);
+        });
+    });
+
+    // Плавающие кнопки зума и изометрии на мобильных
+    document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+        if (typeof zoomCamera === 'function') zoomCamera(1);
+    });
+    document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+        if (typeof zoomCamera === 'function') zoomCamera(-1);
+    });
+    document.getElementById('btn-quick-isometric')?.addEventListener('click', () => {
+        document.getElementById('btn-view-3d')?.click();
+    });
+
+    // Плавное скрытие подсказки по жестам при первом касании экрана
+    const touchHint = document.getElementById('mobile-touch-hint');
+    if (touchHint) {
+        const dismissHint = () => {
+            touchHint.style.opacity = '0';
+            setTimeout(() => {
+                touchHint.style.display = 'none';
+            }, 500);
+            window.removeEventListener('touchstart', dismissHint);
+        };
+        window.addEventListener('touchstart', dismissHint, { passive: true });
+        setTimeout(dismissHint, 5000);
+    }
 }
 

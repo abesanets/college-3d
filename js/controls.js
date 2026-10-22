@@ -33,6 +33,21 @@ function initControls(camera, domElement) {
     return controls;
 }
 
+// Плавный программный зум для экранных кнопок (+ / -)
+function zoomCamera(direction) {
+    if (!controls || !camera) return;
+    const factor = direction > 0 ? 0.82 : 1.22;
+    const offset = camera.position.clone().sub(controls.target);
+    const newDist = offset.length() * factor;
+
+    if (newDist >= controls.minDistance && newDist <= controls.maxDistance) {
+        camera.position.copy(controls.target).addScaledVector(offset, factor);
+        if (typeof requestRender === 'function') {
+            requestRender(20);
+        }
+    }
+}
+
 function onPointerZoom(event) {
     if (!controls || !camera) return;
 
