@@ -58,6 +58,30 @@ const MATERIALS = {
         transparent: true,
         opacity: 0.9
     }),
+    selectedWall: new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        emissive: 0x0284c7,
+        emissiveIntensity: 0.45,
+        roughness: 0.35,
+        metalness: 0.1
+    }),
+    hoverWall: new THREE.MeshStandardMaterial({
+        color: 0x7dd3fc,
+        emissive: 0x0369a1,
+        emissiveIntensity: 0.25,
+        roughness: 0.45,
+        metalness: 0.05
+    }),
+    drawPreviewWall: new THREE.MeshStandardMaterial({
+        color: 0x38bdf8,
+        transparent: true,
+        opacity: 0.65,
+        roughness: 0.5
+    }),
+    edgeSelected: new THREE.LineBasicMaterial({
+        color: 0x38bdf8,
+        linewidth: 2
+    }),
     stairBoxEdge: new THREE.LineBasicMaterial({
         color: 0x34d399,
         transparent: true,

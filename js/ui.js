@@ -247,6 +247,11 @@ function resetSettingsToDefault() {
 }
 
 function setupUI() {
+    // Кнопка включения режима редактора
+    document.getElementById('btn-toggle-editor')?.addEventListener('click', () => {
+        if (typeof toggleEditor === 'function') toggleEditor();
+    });
+
     // 0. Кнопка сброса настроек
     document.getElementById('btn-reset-settings')?.addEventListener('click', () => {
         resetSettingsToDefault();

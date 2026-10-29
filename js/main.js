@@ -71,10 +71,15 @@ function init() {
     // Создаём группы для 1–7 этажей и подгруппы Корпусов 1, 2, 3 и 4
     for (let f = 1; f <= 7; f++) {
         floorGroups[f] = new THREE.Group();
+        floorGroups[f].userData = { floor: f };
         bldg1FloorGroups[f] = new THREE.Group();
+        bldg1FloorGroups[f].userData = { building: 1, floor: f };
         bldg2FloorGroups[f] = new THREE.Group();
+        bldg2FloorGroups[f].userData = { building: 2, floor: f };
         bldg3FloorGroups[f] = new THREE.Group();
+        bldg3FloorGroups[f].userData = { building: 3, floor: f };
         bldg4FloorGroups[f] = new THREE.Group();
+        bldg4FloorGroups[f].userData = { building: 4, floor: f };
         floorGroups[f].add(bldg1FloorGroups[f]);
         floorGroups[f].add(bldg2FloorGroups[f]);
         floorGroups[f].add(bldg3FloorGroups[f]);
@@ -131,6 +136,9 @@ function init() {
     updateAlignmentGuides();
     updateStairValidationAxes();
     setupUI();
+    if (typeof initEditor === 'function') {
+        initEditor();
+    }
 
     // Быстрый отклик на любые действия пользователя для On-Demand рендеринга
     ['pointerdown', 'pointermove', 'wheel', 'touchstart', 'touchmove', 'keydown', 'input', 'change'].forEach(evt => {

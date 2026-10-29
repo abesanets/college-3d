@@ -120,6 +120,25 @@ function addArbitraryWallSegment(targetGroup, x1, z1, x2, z2, thickness = 0.18, 
     mesh.userData.isExterior = effectiveExterior;
     mesh.userData.isInterior = !effectiveExterior && (isDoor || (thickness < 0.20));
     mesh.userData.isDoor = isDoor;
+    mesh.userData.isWall = !isDoor;
+    mesh.userData.len = len;
+    mesh.userData.thickness = thickness;
+    mesh.userData.angle = angle;
+    mesh.userData.initialX = cx;
+    mesh.userData.initialZ = cz;
+    mesh.userData.initialLen = len;
+    mesh.userData.initialThickness = thickness;
+    mesh.userData.initialAngle = angle;
+    const bNum = (targetGroup && targetGroup.userData && targetGroup.userData.building) || 1;
+    const fNum = (targetGroup && targetGroup.userData && targetGroup.userData.floor) || 1;
+    mesh.userData.building = bNum;
+    mesh.userData.floor = fNum;
+    mesh.userData.targetGroup = targetGroup;
+    mesh.userData.wallId = 'b' + bNum + '_f' + fNum + '_' + cx.toFixed(2) + '_' + cz.toFixed(2) + '_' + len.toFixed(2) + '_' + angle.toFixed(2) + '_' + (isDoor ? 'd' : 'w');
+    if (typeof window !== 'undefined') {
+        if (!window.WALL_REGISTRY) window.WALL_REGISTRY = new Map();
+        window.WALL_REGISTRY.set(mesh.userData.wallId, mesh);
+    }
     targetGroup.add(mesh);
 
     const edgeGeom = new THREE.EdgesGeometry(geom);
@@ -159,6 +178,25 @@ function createWallSegment(targetGroup, c1, c2, fixedCoord, isHorizontal, angle,
     mesh.userData.isExterior = isExterior;
     mesh.userData.isInterior = !isExterior && (isDoor || (thickness < 0.20));
     mesh.userData.isDoor = isDoor;
+    mesh.userData.isWall = !isDoor;
+    mesh.userData.len = len;
+    mesh.userData.thickness = thickness;
+    mesh.userData.angle = angle;
+    mesh.userData.initialX = cx;
+    mesh.userData.initialZ = cz;
+    mesh.userData.initialLen = len;
+    mesh.userData.initialThickness = thickness;
+    mesh.userData.initialAngle = angle;
+    const bNum_c = (targetGroup && targetGroup.userData && targetGroup.userData.building) || 1;
+    const fNum_c = (targetGroup && targetGroup.userData && targetGroup.userData.floor) || 1;
+    mesh.userData.building = bNum_c;
+    mesh.userData.floor = fNum_c;
+    mesh.userData.targetGroup = targetGroup;
+    mesh.userData.wallId = 'b' + bNum_c + '_f' + fNum_c + '_' + cx.toFixed(2) + '_' + cz.toFixed(2) + '_' + len.toFixed(2) + '_' + angle.toFixed(2) + '_' + (isDoor ? 'd' : 'w');
+    if (typeof window !== 'undefined') {
+        if (!window.WALL_REGISTRY) window.WALL_REGISTRY = new Map();
+        window.WALL_REGISTRY.set(mesh.userData.wallId, mesh);
+    }
     targetGroup.add(mesh);
 
     const edgeGeom = new THREE.EdgesGeometry(geom);
